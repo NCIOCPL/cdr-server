@@ -2904,14 +2904,88 @@ OCECDR-3956: Allow CitationLinks in Image Captions
      <xsl:text>image-title</xsl:text>
     </xsl:attribute>
 
+    <!-- The users want the caption and image title marked up -->
     <xsl:choose>
-     <xsl:when                    test = "Media/MediaTitle">
-      <xsl:value-of             select = "Media/MediaTitle"/>
+     <xsl:when                    test = "parent::MediaLink/@iod = 'Deletion'">
+      <xsl:choose>
+       <xsl:when                  test = "preceding-sibling::Deletion
+                                            /@RevisionLevel = 'proposed'">
+        <xsl:element              name = "span">
+         <xsl:attribute           name = "class">
+          <xsl:text>deleteproposed</xsl:text>
+         </xsl:attribute>
+         <xsl:choose>
+          <xsl:when               test = "Media/MediaTitle">
+           <xsl:value-of        select = "Media/MediaTitle"/>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:value-of        select = "."/>
+          </xsl:otherwise>
+         </xsl:choose>
+        </xsl:element>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:element              name = "span">
+         <xsl:attribute           name = "class">
+          <xsl:text>deleteapproved</xsl:text>
+         </xsl:attribute>
+         <xsl:choose>
+          <xsl:when               test = "Media/MediaTitle">
+           <xsl:value-of        select = "Media/MediaTitle"/>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:value-of        select = "."/>
+          </xsl:otherwise>
+         </xsl:choose>
+        </xsl:element>
+       </xsl:otherwise>
+      </xsl:choose>
      </xsl:when>
+     <xsl:when                    test = "parent::MediaLink/@iod='Insertion'">
+      <xsl:choose>
+       <xsl:when                  test = "preceding-sibling::Insertion
+                                            /@RevisionLevel = 'proposed'">
+        <xsl:element              name = "span">
+         <xsl:attribute           name = "class">
+          <xsl:text>insertproposed</xsl:text>
+         </xsl:attribute>
+         <xsl:choose>
+          <xsl:when               test = "Media/MediaTitle">
+           <xsl:value-of        select = "Media/MediaTitle"/>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:value-of        select = "."/>
+          </xsl:otherwise>
+         </xsl:choose>
+        </xsl:element>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:element              name = "span">
+         <xsl:attribute           name = "class">
+          <xsl:text>insertapproved</xsl:text>
+         </xsl:attribute>
+         <xsl:choose>
+          <xsl:when               test = "Media/MediaTitle">
+           <xsl:value-of        select = "Media/MediaTitle"/>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:value-of        select = "."/>
+          </xsl:otherwise>
+         </xsl:choose>
+        </xsl:element>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:when>
+
      <xsl:otherwise>
-      <xsl:value-of             select = "."/>
+      <xsl:value-of        select = "."/>
      </xsl:otherwise>
+
     </xsl:choose>
+
+
+
+
    </xsl:element>
   </xsl:element>
  </xsl:template>
