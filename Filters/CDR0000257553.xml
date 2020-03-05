@@ -58,11 +58,11 @@ Volker Englisch         2008-11-13
  ==================================================================== -->
  <xsl:template                   match = "/">
   <xsl:text    disable-output-escaping ='yes'>&lt;!DOCTYPE html&gt;</xsl:text>
-  <html>
-   <head>
+  <xsl:element                    name = "html">
+   <xsl:element                   name = "head">
     <xsl:variable                 name = "cdrdocs"
                                 select = "document('cdrx:/*/CdrCtl')"/>
-    <title>
+    <xsl:element                  name = "title">
      <xsl:value-of              select = "concat('CDR',
                                            number(
                                            substring-after($docID, 'CDR')))"/>
@@ -70,7 +70,7 @@ Volker Englisch         2008-11-13
      <xsl:value-of              select = "substring-before(
                                            concat($cdrdocs/CdrDocCtl/
                                                   DocTitle, ';'), ';')"/>
-    </title>
+    </xsl:element>
 
     <style type='text/css'>
      <xsl:call-template           name = "defaultStyle"/>
@@ -96,11 +96,11 @@ Volker Englisch         2008-11-13
      .blank-row td { padding: 12px; 
                      border: 0; }
     </style>
-   </head>
+   </xsl:element>
 
    <xsl:apply-templates         select = "GlossaryTermName"/>
 
-  </html>
+  </xsl:element>
  </xsl:template>
 
 
@@ -362,6 +362,8 @@ Volker Englisch         2008-11-13
   <xsl:param                      name = "termAudience"/>
   <xsl:param                      name = "lang"
                                 select = "'en'"/>
+  <!-- We don't want to pick up the concept definition from the related Glossary -->
+  <xsl:if                         test = "not(ancestor::RelatedGlossaryTermNameLink)">
    <tr class="defTab">
     <td         xsl:use-attribute-sets = "cell1of2" class="cellDef">
      <b>Definition</b>
@@ -373,14 +375,15 @@ Volker Englisch         2008-11-13
                                             [Audience = $termAudience]/
                                           DefinitionText"/>
       </xsl:when>
-      <xsl:otherwise>
+      <xsl:when                   test = "$lang = 'es'">
        <xsl:apply-templates     select = "TranslatedTermDefinition
                                             [Audience = $termAudience]/
                                           DefinitionText"/>
-      </xsl:otherwise>
+      </xsl:when>
      </xsl:choose>
     </td>
    </tr>
+  </xsl:if>
    <tr class="blank-row">
     <td colspan="2"></td>
    </tr>
