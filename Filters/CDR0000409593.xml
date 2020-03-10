@@ -30,10 +30,20 @@ Filter to create Vendor Genetics Professionals XML documents
  Main Template
  ================================================================ -->
  <xsl:template                   match = "Summary">
-  <xsl:variable                   name = "sumAudience"
-                                select = "substring(
-                                            SummaryMetaData/
-                                            SummaryAudience, 1, 19)"/>
+  <!-- For some strange reason we sometimes use singular and somtimes plural
+       for the audience -->
+  <xsl:variable                   name = "sumAudience">
+   <xsl:choose>
+    <xsl:when                     test = "starts-with(SummaryMetaData/
+                                                        SummaryAudience,
+                                                        'Health')">
+     <xsl:text>Health professional</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>Patient</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
   <xsl:copy>
    <!--
    ==============================================================
