@@ -24,6 +24,11 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
  <xsl:output                    method = 'xml'
                               encoding = 'utf-8'/>
 
+ <!-- Stylesheet level parameter isQC, passed in from the caller -->
+ <!-- Setting default to QC report -->
+
+ <xsl:param                       name = "isQC"
+                                select = "'N'"/>
  <!--
  =================================================================
  Start copying everything from the root down
@@ -40,13 +45,29 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
  within insertion/deletion markup.
  Modified to pull in only a publishable version of a module.
                                                      VE, 2019-10-31
+ Including only the publishable version of a module didn't work for
+ running a QC report where users do want to see unpublished content.
+ Modified to create two paths
+ - path for published documents including publishable version and
+ - path for QC reports including CWD version
+                                                     VE, 2020-01-22
  ================================================================== -->
  <xsl:template                   match = "SummaryModuleLink">
   <xsl:variable                   name = "moduleRef"
                                 select = "@cdr:ref"/>
+
+  <xsl:variable                   name = "docVersion">
+   <xsl:choose>
+    <xsl:when                     test = "$isQC = 'N'">
+     <xsl:text>/lastp</xsl:text>
+    </xsl:when>
+   </xsl:choose>
+  </xsl:variable>
+
   <xsl:variable                   name = "moduleInfo"
                                 select = "document(concat('cdr:', $moduleRef,
-                                                                  '/lastp'))"/>
+                                                                  $docVersion))"/>
+
    <xsl:apply-templates         select = "$moduleInfo/
                                            Summary/
                                            SummarySection
