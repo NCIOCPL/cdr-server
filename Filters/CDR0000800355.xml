@@ -457,7 +457,105 @@
     <xsl:with-param             name = "audience"
                               select = "$audience"/>
    </xsl:apply-templates>
+   <xsl:call-template           name = "other-languages">
+    <xsl:with-param             name = "langcode">
+     <xsl:choose>
+      <xsl:when                 test = "$langcode = 'en'">
+       <xsl:value-of          select = "'es'"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of          select = "'en'"/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:with-param>
+    <xsl:with-param             name = "audience"
+                              select = "$audience"/>
+    <xsl:with-param             name = "dictionary"
+                              select = "$dictionary"/>
+   </xsl:call-template>
   </node>
+ </xsl:template>
+
+ <!-- Make it easier for the API to know if the language can be toggled. -->
+ <xsl:template                  name = "other-languages">
+  <xsl:param                    name = "langcode"/>
+  <xsl:param                    name = "audience"/>
+  <xsl:param                    name = "dictionary"/>
+  <xsl:variable                 name = "matched">
+   <xsl:call-template           name = "matching-definitions">
+    <xsl:with-param             name = "langcode"
+                              select = "$langcode"/>
+    <xsl:with-param             name = "audience"
+                              select = "$audience"/>
+    <xsl:with-param             name = "dictionary"
+                              select = "$dictionary"/>
+   </xsl:call-template>
+  </xsl:variable>
+  <xsl:if                       test = "normalize-space($matched)">
+   <xsl:variable                name = "term-name">
+    <xsl:choose>
+     <xsl:when                  test = "$langcode = 'es'">
+      <xsl:value-of           select = "../../SpanishTermName"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of           select = "../../TermName"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:variable>
+   <xsl:variable                name = "name">
+    <xsl:value-of             select = "normalize-space($term-name)"/>
+   </xsl:variable>
+   <other_languages             type = "array-member">
+    <language>
+     <xsl:value-of            select = "$langcode"/>
+    </language>
+    <term_name>
+     <xsl:value-of            select = "$name"/>
+    </term_name>
+    <pretty_url_name       processor = "clean_pretty_url">
+     <xsl:value-of            select = "$name"/>
+    </pretty_url_name>
+   </other_languages>
+  </xsl:if>
+ </xsl:template>
+
+ <!-- Find matching definitions in another language.
+      Result is a non-empty string if at least one found.
+ -->
+ <xsl:template                  name = "matching-definitions">
+  <xsl:param                    name = "langcode"/>
+  <xsl:param                    name = "audience"/>
+  <xsl:param                    name = "dictionary"/>
+  <xsl:choose>
+   <xsl:when                    test = "$langcode = 'es'">
+    <xsl:for-each             select = "../../SpanishTermDefinition">
+     <xsl:if                    test = "Audience = $audience">
+      <xsl:if                   test = "Dictionary = $dictionary">
+       <xsl:text>x</xsl:text>
+      </xsl:if>
+      <xsl:if                   test = "not(Dictionary)">
+       <xsl:if                  test = "$dictionary = 'NotFound'">
+        <xsl:text>x</xsl:text>
+       </xsl:if>
+      </xsl:if>
+     </xsl:if>
+    </xsl:for-each>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:for-each             select = "../../TermDefinition">
+     <xsl:if                    test = "Audience = $audience">
+      <xsl:if                   test = "Dictionary = $dictionary">
+       <xsl:text>x</xsl:text>
+      </xsl:if>
+      <xsl:if                   test = "not(Dictionary)">
+       <xsl:if                  test = "$dictionary = 'NotFound'">
+        <xsl:text>x</xsl:text>
+       </xsl:if>
+      </xsl:if>
+     </xsl:if>
+    </xsl:for-each>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
  <!-- Extract significant digits from the CDR ID, without CDR0* prefix. -->
