@@ -1,10 +1,13 @@
 <?xml version="1.0" ?>
-<!-- Filter title: Module: Multimedia Denormalization -->
+<!-- Filter title: Denormalization Filter: Video -->
 <!--
 ================================================================
 
- Filter to denormalize Multimedia elements.
- Written by Volker Englisch, 2004-11-09
+ Filter to denormalize EmbeddedVideo elements.
+ The Embedded Video needs to be denormalized before the Insertion
+ Deletion wrapper filter runs.
+
+ Written by Volker Englisch, 2020-03-17
 
 ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
@@ -12,45 +15,13 @@
                                version = "1.0">
 
  <xsl:output                    method = "xml"
-                  omit-xml-declaration = "no"
-                              encoding = "UTF-8"/>
+                              encoding = "utf-8"/>
 
- <!--
+  <!--
  Parameters passed via the Web interface
  ================================================================= -->
  <xsl:param                       name = "DisplayPubImages"
                                 select = "'Y'"/>
-
-
- <!--
- =================================================================
- Template to denormalize the Multimedia elements
- ================================================================= -->
- <!-- xsl:template                   match = "MediaID | VideoID" -->
- <xsl:template                   match = "MediaID">
-  <xsl:variable                   name = "MediaID"
-                                select = "@cdr:ref"/>
-  <xsl:variable                   name = "imgVersion">
-   <xsl:choose>
-    <xsl:when                     test = "$DisplayPubImages = 'N'">
-     <xsl:text>/last</xsl:text>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:text>/lastp</xsl:text>
-    </xsl:otherwise>
-   </xsl:choose>
-  </xsl:variable>
-  
-  <xsl:variable                   name = "MediaInfo"
-                                select = "document(concat('cdr:',$MediaID,
-                                                           $imgVersion))"/>
-  <xsl:element                    name = "MediaID">
-   <xsl:attribute                 name = "cdr:ref">
-    <xsl:value-of               select = "@cdr:ref"/>
-   </xsl:attribute>
-   <xsl:copy-of                  select = "$MediaInfo/*"/>
-  </xsl:element>
- </xsl:template>
 
 
  <!--
@@ -71,12 +42,37 @@
     </xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
-  
-  <xsl:element                    name = "MediaID">
+
+  <xsl:variable                   name = "MediaInfo"
+                                select = "document(concat('cdr:',$MediaID,
+                                                           $imgVersion))"/>
+  <xsl:element                    name = "VideoID">
    <xsl:attribute                 name = "cdr:ref">
     <xsl:value-of               select = "@cdr:ref"/>
    </xsl:attribute>
-   <xsl:copy-of                  select = "Media"/>
+   <xsl:apply-templates         select = "$MediaInfo/*"/>
+   <!--
+   <xsl:copy-of                  select = "$MediaInfo/*[not(self::Media/ProcessingStatuses)]"/>
+  -->
   </xsl:element>
  </xsl:template>
+
+ <!--
+ =================================================================
+ Template to strip elements we won't need
+ ================================================================= -->
+ <xsl:template                   match = "MediaSource |
+                                          ProcessingStatuses |
+                                          ProposedUse"/>
+
+ <!--
+ =================================================================
+ Identity Template
+ ================================================================= -->
+ <xsl:template                   match = "@*|node()">
+  <xsl:copy>
+   <xsl:apply-templates         select = "@*|node()"/>
+  </xsl:copy>
+ </xsl:template>
+
 </xsl:transform>
