@@ -44,6 +44,19 @@ Filter to create Vendor Genetics Professionals XML documents
     </xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
+
+  <xsl:variable                   name = "sumLanguage">
+   <xsl:choose>
+    <xsl:when                     test = "SummaryMetaData/
+                                           SummaryLanguage = 'English'">
+     <xsl:text>EN</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text>ES</xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
   <xsl:copy>
    <!--
    ==============================================================
@@ -161,75 +174,116 @@ Filter to create Vendor Genetics Professionals XML documents
                                                           '/last'))"/>
 
        <xsl:choose>
-         <xsl:when                test = "/Summary/
-                                           SummaryMetaData/
-                                           SummaryLanguage = 'English'">
-          <xsl:element            name = "GlossaryTermName">
-           <xsl:value-of        select = "$defInfo/GlossaryTermName/
+        <!-- English -->
+        <xsl:when                 test = "$sumLanguage = 'EN'">
+         <xsl:element             name = "GlossaryTermName">
+          <xsl:value-of         select = "$defInfo/GlossaryTermName/
                                           TermName/
                                           TermNameString"/>
-          </xsl:element>
-          <xsl:copy-of          select = "$defInfo/GlossaryTermName/
+         </xsl:element>
+         <xsl:copy-of           select = "$defInfo/GlossaryTermName/
                                            ReplacementText"/>
-          <xsl:element            name = "GlossaryTermConcept">
-           <!--
-           The Genetics Summaries are using the definitions for the HP
-           audience instead of Patient (English only)
-           The IACT Summaries are using the HP definitions if they
-           exist. If no HP definition is available the patient definition
-           is being used.
-           =========================================================== -->
-           <xsl:choose>
-            <xsl:when             test = "$sumAudience = 'Health professional'">
-             <xsl:choose>
-              <xsl:when           test = "$conceptInfo/
+         <xsl:element             name = "GlossaryTermConcept">
+          <!--
+          The Genetics Summaries are using the definitions for the HP
+          audience instead of Patient (English only)
+          The IACT Summaries are using the HP definitions if they
+          exist. If no HP definition is available the patient definition
+          is being used.
+          =========================================================== -->
+          <xsl:choose>
+           <xsl:when              test = "$sumAudience = 'Health professional'">
+            <xsl:choose>
+             <xsl:when            test = "$conceptInfo/
                                            GlossaryTermConcept/
                                            TermDefinition
                                              [Audience
                                                 = 'Health professional']">
-               <xsl:copy-of     select = "$conceptInfo/
+              <xsl:copy-of      select = "$conceptInfo/
                                            GlossaryTermConcept/
                                            TermDefinition
                                              [Audience
                                                 = 'Health professional']"/>
-              </xsl:when>
-              <xsl:otherwise>
-               <xsl:copy-of     select = "$conceptInfo/
+             </xsl:when>
+             <xsl:otherwise>
+              <xsl:copy-of      select = "$conceptInfo/
                                            GlossaryTermConcept/
                                            TermDefinition
                                              [Audience = 'Patient'
                                               and
                                               Dictionary = 'Cancer.gov']"/>
-              </xsl:otherwise>
-             </xsl:choose>
-            </xsl:when>
-            <xsl:otherwise>
-             <xsl:copy-of       select = "$conceptInfo/
+             </xsl:otherwise>
+            </xsl:choose>
+           </xsl:when>
+           <xsl:otherwise>
+           <!-- Patient -->
+            <xsl:copy-of        select = "$conceptInfo/
                                            GlossaryTermConcept/
                                            TermDefinition
                                              [Audience = 'Patient'
                                               and
                                               Dictionary = 'Cancer.gov']"/>
-            </xsl:otherwise>
-           </xsl:choose>
-          </xsl:element>
-         </xsl:when>
-         <xsl:otherwise>
-          <xsl:element            name = "GlossaryTermName">
-           <xsl:value-of        select = "$defInfo/GlossaryTermName/
+           </xsl:otherwise>
+          </xsl:choose>
+         </xsl:element>
+        </xsl:when>
+
+        <!-- Spanish -->
+        <xsl:otherwise>
+         <xsl:element             name = "GlossaryTermName">
+          <xsl:value-of         select = "$defInfo/GlossaryTermName/
                                            TranslatedName/
                                            TermNameString"/>
-          </xsl:element>
-          <xsl:copy-of          select = "$defInfo/GlossaryTermName/
+         </xsl:element>
+         <xsl:copy-of           select = "$defInfo/GlossaryTermName/
                                            ReplacementText"/>
-          <xsl:element            name = "GlossaryTermConcept">
-           <xsl:copy-of         select = "$conceptInfo/
+         <xsl:element             name = "GlossaryTermConcept">
+          <!--
+          The Genetics Summaries are using the definitions for the HP
+          audience instead of Patient (English only)
+          The IACT Summaries are using the HP definitions if they
+          exist. If no HP definition is available the patient definition
+          is being used.
+          =========================================================== -->
+          <xsl:choose>
+           <!-- HP -->
+           <xsl:when              test = "$sumAudience = 'Health professional'">
+            <xsl:choose>
+             <xsl:when            test = "$conceptInfo/
                                            GlossaryTermConcept/
                                            TranslatedTermDefinition
-                                              [Audience = $sumAudience]"/>
-          </xsl:element>
-         </xsl:otherwise>
-        </xsl:choose>
+                                             [Audience
+                                                = 'Health professional']">
+              <xsl:copy-of      select = "$conceptInfo/
+                                           GlossaryTermConcept/
+                                           TranslatedTermDefinition
+                                             [Audience
+                                                = 'Health professional']"/>
+             </xsl:when>
+             <xsl:otherwise>
+              <xsl:copy-of      select = "$conceptInfo/
+                                           GlossaryTermConcept/
+                                           TranslatedTermDefinition
+                                             [Audience = 'Patient'
+                                              and
+                                              Dictionary = 'Cancer.gov']"/>
+             </xsl:otherwise>
+            </xsl:choose>
+           </xsl:when>
+           <!-- Patient -->
+           <xsl:otherwise>
+            <xsl:copy-of        select = "$conceptInfo/
+                                           GlossaryTermConcept/
+                                           TranslatedTermDefinition
+                                             [Audience = 'Patient'
+                                              and
+                                              Dictionary = 'Cancer.gov']"/>
+           </xsl:otherwise>
+          </xsl:choose>
+         </xsl:element>
+        </xsl:otherwise>
+       </xsl:choose>
+
       </xsl:element>
      </xsl:for-each>
     </xsl:element>
