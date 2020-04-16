@@ -2436,53 +2436,37 @@ OCECDR-3956: Allow CitationLinks in Image Captions
   <xsl:choose>
    <!-- Display Images -->
    <xsl:when                      test = "$DisplayImages = 'Y'">
-    <xsl:text>Images </xsl:text>
     <xsl:choose>
+
      <!-- Display for RS Report -->
      <xsl:when                    test = "contains($whoAmI, 'RS')">
-      <xsl:text>RS </xsl:text>
       <xsl:apply-templates      select = "."
                                   mode = "summary"/>
+
+      <!-- Display caption -->
       <xsl:if                     test = "not(../@UseCaption = 'No')">
        <xsl:call-template         name = "addCaption"/>
       </xsl:if>
+
      </xsl:when>
+
      <!-- Display for BU Report -->
      <xsl:otherwise>
       <!-- Handle markup sections -->
       <!-- Don't display approved deletion -->
-      <xsl:text>BU </xsl:text>
-      <xsl:choose>
-       <xsl:when                  test = "../@iod = 'Deletion'
-                                          and
-                                          descendant::Deletion
-                                            /@RevisionLevel = 'proposed'
-                                          or
-                                          ../@iod = 'Insertion'">
-        <xsl:apply-templates    select = "."
+      <xsl:apply-templates    select = "."
                                   mode = "summary"/>
-        <xsl:if                   test = "not(../@UseCaption = 'No')">
-         <xsl:call-template       name = "addCaption"/>
-        </xsl:if>
-       </xsl:when>
-       <xsl:when                  test = "../@iod = 'Deletion'
-                                          and
-                                          descendant::Deletion
-                                            /@RevisionLevel = 'approved'">
-        <!-- do nothing, deletion is applied -->
-       </xsl:when>
-       <!-- Handle no markup section -->
-       <xsl:otherwise>
-        <xsl:apply-templates    select = "."
-                                  mode = "summary"/>
-        <xsl:if                   test = "not(../@UseCaption = 'No')">
-         <xsl:call-template       name = "addCaption"/>
-        </xsl:if>
-       </xsl:otherwise>
-      </xsl:choose>
+
+      <!-- Display caption -->
+      <xsl:if                   test = "not(../@UseCaption = 'No')">
+       <xsl:call-template       name = "addCaption"/>
+      </xsl:if>
+
      </xsl:otherwise>
+
     </xsl:choose>
    </xsl:when>
+
    <!-- Display Image Placeholders -->
    <xsl:otherwise>
       <!--
@@ -2491,11 +2475,9 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       <xsl:choose>
        <xsl:when                  test = "parent::MediaLink
                                             /@iod = 'Deletion'">
-        <xsl:text>DADA </xsl:text>
         <xsl:choose>
          <xsl:when                test = "following-sibling::Caption[
                                              Deletion/@RevisionLevel = 'proposed']">
-        <xsl:text>DUDU </xsl:text>
           <xsl:element            name = "div">
            <xsl:attribute         name = "class">
             <xsl:text>imagepadding</xsl:text>
@@ -2513,7 +2495,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                 select = "../@cdr:id"/>
              </xsl:call-template>
              <xsl:element         name = "b">
-              <xsl:text>1Image: </xsl:text>
+              <xsl:text>Image: </xsl:text>
               <xsl:value-of     select = "Media/
                                           MediaTitle"/>
              </xsl:element>
@@ -2546,7 +2528,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                 select = "../@cdr:id"/>
                </xsl:call-template>
                <xsl:element       name = "b">
-                <xsl:text>2Image: </xsl:text>
+                <xsl:text>Image: </xsl:text>
                  <xsl:value-of  select = "Media/
                                           MediaTitle"/>
                </xsl:element>
@@ -2583,7 +2565,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                 select = "../@cdr:id"/>
              </xsl:call-template>
              <xsl:element         name = "b">
-              <xsl:text>3Image: </xsl:text>
+              <xsl:text>Image: </xsl:text>
               <xsl:value-of     select = "Media/
                                           MediaTitle"/>
              </xsl:element>
@@ -2609,7 +2591,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                 select = "../@cdr:id"/>
              </xsl:call-template>
              <xsl:element         name = "b">
-              <xsl:text>4Image: </xsl:text>
+              <xsl:text>Image: </xsl:text>
               <xsl:value-of     select = "Media/
                                           MediaTitle"/>
              </xsl:element>
@@ -2633,7 +2615,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                 select = "../@cdr:id"/>
           </xsl:call-template>
           <xsl:element         name = "b">
-           <xsl:text>5Image: </xsl:text>
+           <xsl:text>Image: </xsl:text>
            <xsl:value-of         select = "Media/
                                           MediaTitle"/>
           </xsl:element>
@@ -3115,12 +3097,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                           or
                                           parent::EmbeddedVideo
                                             /@iod = 'Deletion'">
-    <xsl:text>Deletion </xsl:text>
     <xsl:choose>
      <!-- Markup section -->
      <xsl:when                    test = "preceding-sibling::Deletion
                                             /@RevisionLevel = 'proposed'">
-      <xsl:text>Proposed </xsl:text>
       <xsl:element                name = "span">
        <xsl:attribute             name = "class">
         <xsl:text>deleteproposed</xsl:text>
@@ -3131,8 +3111,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       </xsl:element>
      </xsl:when>
      <xsl:when                    test = "preceding-sibling::Deletion
-                                            /@RevisionLevel = 'approved'">
-      <!-- Do nothing, Deletion is applied -->
+                                            /@RevisionLevel = 'approved'
+                                          and 
+                                          contains($whoAmI, 'BU')">
+      <!-- Do nothing, Deletion is applied for BU -->
      </xsl:when>
      <xsl:otherwise>
       <xsl:element                name = "span">
@@ -3153,6 +3135,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                           parent::EmbeddedVideo
                                              /@iod = 'Insertion'">
     <xsl:choose>
+     <!-- Markup section -->
      <xsl:when                    test = "parent::MediaLink
                                             /@RevisionLevel = 'proposed'">
       <xsl:element                name = "span">
@@ -3263,7 +3246,17 @@ OCECDR-3956: Allow CitationLinks in Image Captions
 
    <!--
    Floating DIV to display the title
-   ============================================= -->
+
+   Note: The MediaLink and EmbeddedVideo are denomalized by two different filters.
+         The EmbeddedVideo is part of the "regular" denormalization and therefore
+         every text element is enclosed in Insertion/Deletion markup if it exists.
+         In order to identify the mark-up level (approved or proposed) we can 
+         check the children of the MediaTitle directly.
+         The MediaLink is NOT part of that original denormalization and therefore
+         the Insertion/Deletion markup is missing inside the MediaID element.  In
+         order to identify the mark-up level we'll have to inspect the mark-up
+         element just before the MediaID element.
+   ============================================================================== -->
    <xsl:element                   name = "div">
     <xsl:attribute                name = "class">
      <xsl:text>image-title</xsl:text>
@@ -3275,6 +3268,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                           or
                                           parent::EmbeddedVideo/@iod = 'Deletion'">
       <xsl:choose>
+       <!-- For MediaLink, Insertion/Deletion element exists just before MediaID -->
        <xsl:when                  test = "preceding-sibling::Deletion
                                             /@RevisionLevel = 'proposed'">
         <xsl:element              name = "span">
@@ -3291,8 +3285,37 @@ OCECDR-3956: Allow CitationLinks in Image Captions
          </xsl:choose>
         </xsl:element>
        </xsl:when>
+
+       <!-- For EmbeddedVideo, the MediaTitle includes Insertion/Deletion -->
+       <xsl:when                  test = "descendant::MediaTitle[
+                                             Deletion/@RevisionLevel = 'proposed']">
+        <xsl:element              name = "span">
+         <xsl:attribute           name = "class">
+          <xsl:text>deleteproposed</xsl:text>
+         </xsl:attribute>
+         <xsl:choose>
+          <xsl:when               test = "Media/MediaTitle">
+           <xsl:value-of        select = "Media/MediaTitle"/>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:value-of        select = "."/>
+          </xsl:otherwise>
+         </xsl:choose>
+        </xsl:element>
+       </xsl:when>
+       <!-- For MediaID -->
        <xsl:when                  test = "preceding-sibling::Deletion
-                                            /@RevisionLevel = 'approved'">
+                                            /@RevisionLevel = 'approved'
+                                          and
+                                          contains($whoAmI, 'BU')">
+        <!-- Do nothing, Approved deletion is applied -->
+
+       </xsl:when>
+       <!-- For EmbeddedVideo -->
+       <xsl:when                  test = "descendant::MediaTitle[
+                                            Deletion/@RevisionLevel = 'approved']
+                                          and
+                                          contains($whoAmI, 'BU')">
         <!-- Do nothing, Approved deletion is applied -->
 
        </xsl:when>
@@ -3313,10 +3336,12 @@ OCECDR-3956: Allow CitationLinks in Image Captions
        </xsl:otherwise>
       </xsl:choose>
      </xsl:when>
+
      <xsl:when                    test = "parent::MediaLink/@iod='Insertion'
                                           or
                                           parent::EmbeddedVideo/@iod='Insertion'">
       <xsl:choose>
+       <!-- For MediaLink, Insertion/Deletion element exists just before MediaID -->
        <xsl:when                  test = "preceding-sibling::Insertion
                                             /@RevisionLevel = 'proposed'">
         <xsl:element              name = "span">
@@ -3333,6 +3358,25 @@ OCECDR-3956: Allow CitationLinks in Image Captions
          </xsl:choose>
         </xsl:element>
        </xsl:when>
+
+       <!-- For EmbeddedVideo, the MediaTitle includes Insertion/Deletion -->
+       <xsl:when                  test = "descendant::MediaTitle[
+                                             Insertion/@RevisionLevel = 'proposed']">
+        <xsl:element              name = "span">
+         <xsl:attribute           name = "class">
+          <xsl:text>insertproposed</xsl:text>
+         </xsl:attribute>
+         <xsl:choose>
+          <xsl:when               test = "Media/MediaTitle">
+           <xsl:value-of        select = "Media/MediaTitle"/>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:value-of        select = "."/>
+          </xsl:otherwise>
+         </xsl:choose>
+        </xsl:element>
+       </xsl:when>
+
        <xsl:otherwise>
         <xsl:element              name = "span">
          <xsl:attribute           name = "class">
