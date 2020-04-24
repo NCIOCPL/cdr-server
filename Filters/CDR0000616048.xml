@@ -807,7 +807,24 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
         <xsl:text> and </xsl:text>
        </xsl:when>
        <xsl:when                  test = "$language = 'es'">
-        <xsl:text> y </xsl:text>
+        <!-- If the first character of the following word starts with
+             an i-sound, the 'y' becomes 'e' in Spanish -->
+        <xsl:choose>
+         <xsl:when                test = "substring($queryRows
+                                             /SqlResult
+                                             /row[@id = 2]
+                                             /col[@name='value'], 1, 1) = 'i'
+                                          or
+                                          substring($queryRows
+                                             /SqlResult
+                                             /row[@id = 2]
+                                             /col[@name='value'], 1, 1) = 'I'">
+          <xsl:text> e </xsl:text>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:text> y </xsl:text>
+         </xsl:otherwise>
+        </xsl:choose>
        </xsl:when>
       </xsl:choose>
       <xsl:value-of             select = "$queryRows
@@ -844,7 +861,24 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
            <xsl:text>, and </xsl:text>
           </xsl:when>
           <xsl:when                test = "$language = 'es'">
-           <xsl:text> y </xsl:text>
+           <!-- If the first character of the following word starts with
+                an i-sound, the 'y' becomes 'e' in Spanish -->
+           <xsl:choose>
+            <xsl:when                test = "substring($queryRows
+                                                /SqlResult
+                                                /row[@id = last()]
+                                                /col[@name='value'], 1, 1) = 'i'
+                                             or
+                                             substring($queryRows
+                                                /SqlResult
+                                                /row[@id = last()]
+                                                /col[@name='value'], 1, 1) = 'I'">
+             <xsl:text> e </xsl:text>
+            </xsl:when>
+            <xsl:otherwise>
+             <xsl:text> y </xsl:text>
+            </xsl:otherwise>
+           </xsl:choose>
           </xsl:when>
          </xsl:choose>
         </xsl:when>
