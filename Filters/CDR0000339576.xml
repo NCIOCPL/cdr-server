@@ -2476,8 +2476,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
        <xsl:when                  test = "parent::MediaLink
                                             /@iod = 'Deletion'">
         <xsl:choose>
-         <xsl:when                test = "following-sibling::Caption[
-                                             Deletion/@RevisionLevel = 'proposed']">
+         <xsl:when                test = "@RevisionLevel = 'proposed'">
           <xsl:element            name = "div">
            <xsl:attribute         name = "class">
             <xsl:text>imagepadding</xsl:text>
@@ -2546,8 +2545,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
        <xsl:when                  test = "parent::MediaLink
                                             /@iod = 'Insertion'">
         <xsl:choose>
-         <xsl:when                test = "following-sibling::Caption[
-                                             Insertion/@RevisionLevel = 'proposed']">
+         <xsl:when                test = "@RevisionLevel = 'proposed'">
           <xsl:element            name = "div">
            <xsl:attribute         name = "class">
             <xsl:text>imagepadding</xsl:text>
@@ -2948,14 +2946,16 @@ OCECDR-3956: Allow CitationLinks in Image Captions
 
  <!--
  ======================================================================
- Template handling Captions when images are being displayed as well
+ Template handling Captions when images are being displayed or if
+ UseCaption option is applied
  ====================================================================== -->
  <xsl:template                    name = "addCaption">
-   <xsl:element                   name = "div">
-    <xsl:attribute                name = "class">
-     <xsl:text>caption</xsl:text>
-     <xsl:text> caption-box</xsl:text>
-    </xsl:attribute>
+  <xsl:element                   name = "div">
+   <xsl:attribute                name = "class">
+    <xsl:text>caption</xsl:text>
+    <xsl:text> caption-box IMAGE</xsl:text>
+   </xsl:attribute>
+
    <xsl:choose>
     <xsl:when                     test = "../Caption">
      <xsl:apply-templates       select = "../Caption"
@@ -2966,7 +2966,24 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       <xsl:attribute              name = "class">
        <xsl:text>media-caption</xsl:text>
       </xsl:attribute>
-     <xsl:apply-templates       select = "Media/
+
+      <xsl:choose>
+       <xsl:when                  test = "@InsertionOrDeletion = 'Deletion'">
+        <xsl:element              name = "span">
+         <xsl:choose>
+          <xsl:when               test = "@RevisionLevel = 'proposed'">
+           <xsl:attribute         name = "class">
+            <xsl:text>deleteproposed</xsl:text>
+           </xsl:attribute>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:attribute         name = "class">
+            <xsl:text>deleteapproved</xsl:text>
+           </xsl:attribute>
+          </xsl:otherwise>
+         </xsl:choose>
+
+         <xsl:apply-templates   select = "Media/
                                             MediaContent/
                                             Captions/
                                             MediaCaption[@audience =
@@ -2974,6 +2991,47 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                                          and
                                                          @language =
                                                            $mediaLanguage]"/>
+
+        </xsl:element>
+       </xsl:when>
+       <xsl:when                  test = "@InsertionOrDeletion = 'Insertion'">
+        <xsl:element              name = "span">
+         <xsl:choose>
+          <xsl:when               test = "@RevisionLevel = 'proposed'">
+           <xsl:attribute         name = "class">
+            <xsl:text>insertproposed</xsl:text>
+           </xsl:attribute>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:attribute         name = "class">
+            <xsl:text>insertapproved</xsl:text>
+           </xsl:attribute>
+          </xsl:otherwise>
+         </xsl:choose>
+
+        <xsl:apply-templates    select = "Media/
+                                            MediaContent/
+                                            Captions/
+                                            MediaCaption[@audience =
+                                                           $mediaAudience
+                                                         and
+                                                         @language =
+                                                           $mediaLanguage]"/>
+
+        </xsl:element>
+       </xsl:when>
+
+       <xsl:otherwise>
+        <xsl:apply-templates    select = "Media/
+                                            MediaContent/
+                                            Captions/
+                                            MediaCaption[@audience =
+                                                           $mediaAudience
+                                                         and
+                                                         @language =
+                                                           $mediaLanguage]"/>
+       </xsl:otherwise>
+      </xsl:choose>
      </xsl:element>
     </xsl:otherwise>
    </xsl:choose>
@@ -2989,14 +3047,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    <xsl:element                   name = "div">
     <xsl:attribute                name = "class">
      <xsl:text>caption</xsl:text>
-     <xsl:text> caption-box</xsl:text>
+     <xsl:text> caption-box VIDEO</xsl:text>
     </xsl:attribute>
    <xsl:choose>
     <xsl:when                     test = "SpecificMediaCaption">
-    <!--
-     <xsl:apply-templates       select = "SpecificMediaCaption"
-                                  mode = "createCaption"/>
-    -->
      <xsl:element                 name = "div">
       <xsl:attribute              name = "class">
        <xsl:text>media-caption</xsl:text>
@@ -3085,6 +3139,8 @@ OCECDR-3956: Allow CitationLinks in Image Captions
        have approved and proposed content for video and images marked
        up. We're changing the denormalization order for video to 
        accomodate this request.
+       We're also adjusting the media denormalization to carry over
+       the RevisionLevel attribute.
                                                        2020-03-18, VE
  ====================================================================== -->
  <xsl:template                   match = "MediaID"
@@ -3099,10 +3155,6 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                             /@iod = 'Deletion'">
     <xsl:choose>
      <!-- Markup section -->
-     <!--
-     <xsl:when                    test = "preceding-sibling::Deletion
-                                            /@RevisionLevel = 'proposed'">
-     -->
      <xsl:when                    test = "@RevisionLevel = 'proposed'">
       <xsl:element                name = "span">
        <xsl:attribute             name = "class">
@@ -3113,12 +3165,16 @@ OCECDR-3956: Allow CitationLinks in Image Captions
 
       </xsl:element>
      </xsl:when>
-     <!--
-     <xsl:when                    test = "preceding-sibling::Deletion
-                                            /@RevisionLevel = 'approved'
-     -->
+     <!-- Apply approved deletion for images -->
      <xsl:when                    test = "@RevisionLevel = 'approved'
                                           and 
+                                          contains($whoAmI, 'BU')">
+      <!-- Do nothing, Deletion is applied for BU -->
+     </xsl:when>
+     <!-- Apply approved deletion for video -->
+     <xsl:when                    test = "descendant::Deletion[
+                                             @RevisionLevel = 'approved']
+                                          and
                                           contains($whoAmI, 'BU')">
       <!-- Do nothing, Deletion is applied for BU -->
      </xsl:when>
