@@ -2683,7 +2683,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
          <xsl:when                test = "@iod = 'Deletion'">
           <xsl:choose>
            <xsl:when              test = "descendant::MediaTitle[
-                                                      Deletion/@RevisionLevel 
+                                                      Deletion/@RevisionLevel
                                                                   = 'proposed']">
             <xsl:element          name = "span">
              <xsl:attribute       name = "class">
@@ -2723,7 +2723,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
          <xsl:when                test = "@iod = 'Insertion'">
           <xsl:choose>
            <xsl:when              test = "descendant::MediaTitle[
-                                                      Insertion/@RevisionLevel 
+                                                      Insertion/@RevisionLevel
                                                                   = 'proposed']">
             <xsl:element          name = "span">
              <xsl:attribute         name = "class">
@@ -2950,17 +2950,19 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  UseCaption option is applied
  ====================================================================== -->
  <xsl:template                    name = "addCaption">
-  <xsl:element                   name = "div">
-   <xsl:attribute                name = "class">
+  <xsl:element                    name = "div">
+   <xsl:attribute                 name = "class">
     <xsl:text>caption</xsl:text>
-    <xsl:text> caption-box IMAGE</xsl:text>
+    <xsl:text> caption-box</xsl:text>
    </xsl:attribute>
 
    <xsl:choose>
+    <!-- Using caption from MediaLink element -->
     <xsl:when                     test = "../Caption">
      <xsl:apply-templates       select = "../Caption"
                                   mode = "createCaption"/>
     </xsl:when>
+    <!-- Using caption from Media document (MediaLink/@UseCaption = "Yes") -->
     <xsl:otherwise>
      <xsl:element                 name = "div">
       <xsl:attribute              name = "class">
@@ -2968,6 +2970,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       </xsl:attribute>
 
       <xsl:choose>
+       <!-- Deletion Section -->
        <xsl:when                  test = "@InsertionOrDeletion = 'Deletion'">
         <xsl:element              name = "span">
          <xsl:choose>
@@ -2983,7 +2986,16 @@ OCECDR-3956: Allow CitationLinks in Image Captions
           </xsl:otherwise>
          </xsl:choose>
 
-         <xsl:apply-templates   select = "Media/
+         <xsl:choose>
+          <xsl:when               test = "@RevisionLevel = 'approved'
+                                          and
+                                          contains($whoAmI, 'BU')">
+           <!-- Do nothing, Approved deletion is applied in BU report -->
+
+          </xsl:when>
+          <xsl:otherwise>
+
+           <xsl:apply-templates select = "Media/
                                             MediaContent/
                                             Captions/
                                             MediaCaption[@audience =
@@ -2991,9 +3003,12 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                                          and
                                                          @language =
                                                            $mediaLanguage]"/>
+          </xsl:otherwise>
+         </xsl:choose>
 
         </xsl:element>
        </xsl:when>
+       <!-- Insertion Section -->
        <xsl:when                  test = "@InsertionOrDeletion = 'Insertion'">
         <xsl:element              name = "span">
          <xsl:choose>
@@ -3021,6 +3036,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         </xsl:element>
        </xsl:when>
 
+       <!-- No Markup section -->
        <xsl:otherwise>
         <xsl:apply-templates    select = "Media/
                                             MediaContent/
@@ -3047,7 +3063,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    <xsl:element                   name = "div">
     <xsl:attribute                name = "class">
      <xsl:text>caption</xsl:text>
-     <xsl:text> caption-box VIDEO</xsl:text>
+     <xsl:text> caption-box</xsl:text>
     </xsl:attribute>
    <xsl:choose>
     <xsl:when                     test = "SpecificMediaCaption">
@@ -3134,10 +3150,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
        identifying the revision level of the element currently.  It was
        decided to keep this as is for the time being.
                                                        2017-04-03, VE
- 
-       The above decision has been revised and the users do now want to 
+
+       The above decision has been revised and the users do now want to
        have approved and proposed content for video and images marked
-       up. We're changing the denormalization order for video to 
+       up. We're changing the denormalization order for video to
        accomodate this request.
        We're also adjusting the media denormalization to carry over
        the RevisionLevel attribute.
@@ -3167,7 +3183,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
      </xsl:when>
      <!-- Apply approved deletion for images -->
      <xsl:when                    test = "@RevisionLevel = 'approved'
-                                          and 
+                                          and
                                           contains($whoAmI, 'BU')">
       <!-- Do nothing, Deletion is applied for BU -->
      </xsl:when>
@@ -3312,7 +3328,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    Note: The MediaLink and EmbeddedVideo are denomalized by two different filters.
          The EmbeddedVideo is part of the "regular" denormalization and therefore
          every text element is enclosed in Insertion/Deletion markup if it exists.
-         In order to identify the mark-up level (approved or proposed) we can 
+         In order to identify the mark-up level (approved or proposed) we can
          check the children of the MediaTitle directly.
          The MediaLink is NOT part of that original denormalization and therefore
          the Insertion/Deletion markup is missing inside the MediaID element.  In
