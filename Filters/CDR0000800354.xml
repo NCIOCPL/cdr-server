@@ -2,9 +2,9 @@
 <!-- Filter title: Index Drug Dictionary -->
 
 <!--
-    Create one "terms" node for the document (yes, "terms" should be
-    singular, but we're stuck with it now), as well as "expand" and
-    "autocomplete" per-term nodes.
+    Create one "terms" node for the document's preferred name (yes,
+    "terms" should be singular, but we're stuck with it now), as well
+    for each of the drug's other names.
 
     These will be converted to json by the Python dictionary loader
     and fed to ElasticSearch.
@@ -35,11 +35,8 @@
                                select = "@id"/>
    </xsl:call-template>
   </xsl:variable>
-  <xsl:variable                  name = "definition">
-   <xsl:apply-templates        select = "Definition[1]/DefinitionText">
-    <xsl:with-param              name = "name"
-                               select = "'e_definition'"/>
-   </xsl:apply-templates>
+  <xsl:variable                  name = "preferred-name">
+   <xsl:value-of               select = "normalize-space(PreferredName)"/>
   </xsl:variable>
   <xsl:variable                  name = "pretty-url-name">
    <xsl:call-template            name = "pretty-url-name"/>
@@ -53,73 +50,92 @@
    <term_id>
     <xsl:value-of              select = "$id"/>
    </term_id>
-   <term_name>
-    <xsl:value-of              select = "normalize-space(PreferredName)"/>
-   </term_name>
-   <xsl:if                       test = "@NCIThesaurusConceptID != ''">
-    <nci_concept_id>
-     <xsl:value-of             select = "@NCIThesaurusConceptID"/>
-    </nci_concept_id>
-   </xsl:if>
+   <name>
+    <xsl:value-of              select = "$preferred-name"/>
+   </name>
+   <first_letter            processor = "lowercase_first_letter">
+    <xsl:value-of              select = "$preferred-name"/>
+   </first_letter>
+   <type>DrugTerm</type>
+   <term_name_type>PreferredName</term_name_type>
+   <pretty_url_name         processor = "clean_pretty_url">
+    <xsl:value-of              select = "$pretty-url-name"/>
+   </pretty_url_name>
    <xsl:apply-templates        select = "OtherName"/>
    <xsl:apply-templates        select = "Definition/DefinitionText">
     <xsl:with-param              name = "name"
                                select = "'definition'"/>
    </xsl:apply-templates>
-   <pretty_url_name         processor = "clean_pretty_url">
-    <xsl:value-of              select = "$pretty-url-name"/>
-   </pretty_url_name>
-   <xsl:call-template            name = "related-resource"/>
-  </node>
-
-  <!-- An autocomplete node for the preferred name and for each OtherName. -->
-  <node                      doc_type = "autocomplete">
-   <a_term_id>
-    <xsl:value-of              select = "$id"/>
-   </a_term_id>
-   <autocomplete_name>
-    <xsl:value-of              select = "normalize-space(PreferredName)"/>
-   </autocomplete_name>
-  </node>
-  <xsl:for-each                select = "OtherName">
-   <node                     doc_type = "autocomplete">
-    <a_term_id>
-     <xsl:value-of             select = "$id"/>
-    </a_term_id>
-    <autocomplete_name>
-     <xsl:value-of             select = "normalize-space(OtherTermName)"/>
-    </autocomplete_name>
-   </node>
-  </xsl:for-each>
-
-  <!-- An expand node for the preferred name and for each US brand name. -->
-  <xsl:call-template             name = "expand">
-   <xsl:with-param               name = "id"
-                               select = "$id"/>
-   <xsl:with-param               name = "preferred"
-                               select = "'true'"/>
-   <xsl:with-param               name = "name"
-                               select = "normalize-space(PreferredName)"/>
-   <xsl:with-param               name = "definition"
-                               select = "$definition"/>
-     <xsl:with-param             name = "pretty-url-name"
-                               select = "$pretty-url-name"/>
-  </xsl:call-template>
-  <xsl:for-each                select = "OtherName">
-   <xsl:if                       test = "OtherNameType = 'US brand name'">
-    <xsl:call-template           name = "expand">
-     <xsl:with-param             name = "id"
-                               select = "$id"/>
-     <xsl:with-param             name = "preferred"
-                               select = "'false'"/>
-     <xsl:with-param             name = "name"
-                               select = "normalize-space(OtherTermName)"/>
-     <xsl:with-param             name = "definition"
-                               select = "$definition"/>
-     <xsl:with-param             name = "pretty-url-name"
-                               select = "$pretty-url-name"/>
-    </xsl:call-template>
+   <xsl:variable                 name = "dis-url">
+    <xsl:value-of              select = "normalize-space(CGovInfo/DISUrl)"/>
+   </xsl:variable>
+   <xsl:variable                 name = "dis-title">
+    <xsl:value-of              select = "normalize-space(CGovInfo/DISTitle)"/>
+   </xsl:variable>
+   <xsl:if                       test = "$dis-url != ''">
+    <xsl:if                      test = "$dis-title != ''">
+     <drug_info_summary_link>
+      <url>
+       <xsl:value-of           select = "$dis-url"/>
+      </url>
+      <text>
+       <xsl:value-of           select = "$dis-title"/>
+      </text>
+     </drug_info_summary_link>
+    </xsl:if>
    </xsl:if>
+   <xsl:variable                 name = "cid">
+    <xsl:value-of              select = "@NCIThesaurusConceptID"/>
+   </xsl:variable>
+   <xsl:variable                 name = "normalized-cid">
+    <xsl:value-of              select = "normalize-space($cid)"/>
+   </xsl:variable>
+   <xsl:if                       test = "$normalized-cid != ''">
+    <nci_concept_id>
+     <xsl:value-of             select = "$normalized-cid"/>
+    </nci_concept_id>
+   </xsl:if>
+   <xsl:variable                 name = "ncit-name">
+    <xsl:value-of              select = "normalize-space(CGovInfo/NCITName)"/>
+   </xsl:variable>
+   <xsl:if                       test = "not($ncit-name = '')">
+    <nci_concept_name>
+     <xsl:value-of             select = "$ncit-name"/>
+    </nci_concept_name>
+   </xsl:if>
+  </node>
+
+  <!-- Now create a separate node for each other name. -->
+  <xsl:for-each                select = "OtherName">
+   <xsl:variable                 name = "other-term-name">
+    <xsl:value-of              select = "normalize-space(OtherTermName)"/>
+   </xsl:variable>
+   <node                     doc_type = "terms">
+    <xsl:attribute               name = "id">
+     <xsl:value-of             select = "$id"/>
+     <xsl:text>-</xsl:text>
+     <xsl:value-of             select = "position()"/>
+    </xsl:attribute>
+    <term_id>
+     <xsl:value-of             select = "$id"/>
+    </term_id>
+    <name>
+     <xsl:value-of             select = "$other-term-name"/>
+    </name>
+    <first_letter           processor = "lowercase_first_letter">
+     <xsl:value-of             select = "$other-term-name"/>
+    </first_letter>
+    <type>DrugAlias</type>
+    <term_name_type>
+     <xsl:call-template          name = "other-name-type"/>
+    </term_name_type>
+    <pretty_url_name        processor = "clean_pretty_url">
+     <xsl:value-of             select = "$pretty-url-name"/>
+    </pretty_url_name>
+    <preferred_name>
+     <xsl:value-of             select = "$preferred-name"/>
+    </preferred_name>
+   </node>
   </xsl:for-each>
  </xsl:template>
 
@@ -149,86 +165,50 @@
   <xsl:text>&lt;/a&gt;</xsl:text>
  </xsl:template>
 
- <!-- Add an expand node for a term name or alias. -->
- <xsl:template                   name = "expand">
-  <xsl:param                     name = "id"/>
-  <xsl:param                     name = "preferred"/>
-  <xsl:param                     name = "name"/>
-  <xsl:param                     name = "definition"/>
-  <xsl:param                     name = "pretty-url-name"/>
-  <node                      doc_type = "expand">
-   <e_term_id>
-    <xsl:value-of              select = "$id"/>
-   </e_term_id>
-   <expand_name>
-    <xsl:value-of              select = "$name"/>
-   </expand_name>
-   <first_letter            processor = "lowercase_first_letter">
-    <xsl:value-of              select = "$name"/>
-   </first_letter>
-   <xsl:copy-of                select = "$definition"/>
-   <e_term_name>
-    <xsl:value-of              select = "$name"/>
-   </e_term_name>
-   <is_termname>
-    <xsl:attribute               name = "type">
-     <xsl:value-of             select = "$preferred"/>
-    </xsl:attribute>
-   </is_termname>
-   <e_pretty_url_name         process = "clean_pretty_url">
-    <xsl:value-of              select = "$pretty-url-name"/>
-   </e_pretty_url_name>
-  </node>
+ <!-- Information to be embedded in the main term node. -->
+ <xsl:template                  match = "OtherName">
+  <aliases                       type = "array-member">
+   <type>
+    <xsl:call-template           name = "other-name-type"/>
+   </type>
+   <name>
+    <xsl:value-of              select = "normalize-space(OtherTermName)"/>
+   </name>
+  </aliases>
  </xsl:template>
 
- <!-- Assemble the related resources. -->
- <xsl:template                   name = "related-resource">
-  <xsl:variable                  name = "url"
-                               select = "normalize-space(CGovInfo/DISUrl)"/>
-  <xsl:if                        test = "$url != ''">
-   <related_resources            type = "array-member">
-    <type>DrugSummary</type>
-    <url>
-     <xsl:value-of             select = "$url"/>
-    </url>
-    <text>
-     <xsl:variable               name = "dis-title"
-                               select = "normalize-space(CGovInfo/DISTitle)"/>
-     <xsl:choose>
-      <xsl:when                  test = "$dis-title != ''">
-       <xsl:value-of           select = "$dis-title"/>
-      </xsl:when>
-      <xsl:otherwise>
-       <xsl:value-of           select = "normalize-space(PreferredName)"/>
-      </xsl:otherwise>
-     </xsl:choose>
-    </text>
-   </related_resources>
-  </xsl:if>
- </xsl:template>
-
- <xsl:template                   name = "pretty-url-name">
-  <xsl:variable                  name = "ncit-name"
-                               select = "normalize-space(CGovInfo/NCITName)"/>
+ <!-- Uppercase the first letter of each word and collapse out spaces. -->
+ <xsl:template                  name = "cap-and-collapse">
+  <xsl:param                    name = "str"/>
   <xsl:choose>
-   <xsl:when                     test = "$ncit-name != ''">
-    <xsl:value-of              select = "$ncit-name"/>
+   <xsl:when                    test = "contains($str, ' ')">
+    <xsl:call-template          name = "cap-first-letter">
+     <xsl:with-param            name = "w"
+                              select = "substring-before($str, ' ')"/>
+    </xsl:call-template>
+    <xsl:call-template          name = "cap-and-collapse">
+     <xsl:with-param            name = "str"
+                              select = "substring-after($str, ' ')"/>
+    </xsl:call-template>
    </xsl:when>
    <xsl:otherwise>
-    <xsl:value-of              select = "normalize-space(PreferredName)"/>
+    <xsl:call-template          name = "cap-first-letter">
+     <xsl:with-param            name = "w"
+                              select = "$str"/>
+    </xsl:call-template>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
 
- <xsl:template                  match = "OtherName">
-  <alias                         type = "array-member">
-   <name>
-    <xsl:value-of              select = "normalize-space(OtherTermName)"/>
-   </name>
-   <type>
-    <xsl:value-of              select = "normalize-space(OtherNameType)"/>
-   </type>
-  </alias>
+ <!-- Uppercase the first letter of the word. -->
+ <xsl:template                  name = "cap-first-letter">
+  <xsl:param                    name = "w"/>
+  <xsl:variable                 name = "u"
+                              select = "'ABCDEFGHIJKLMNOPQRSTUVWXYZ'"/>
+  <xsl:variable                 name = "l"
+                              select = "'abcdefghijklmnopqrstuvwxyz'"/>
+  <xsl:value-of               select = "translate(substring($w,1,1), $l, $u)"/>
+  <xsl:value-of               select = "substring($w,2)"/>
  </xsl:template>
 
  <!-- Extract significant digits from the CDR ID, without CDR0* prefix. -->
@@ -243,6 +223,34 @@
   <xsl:variable                  name = "zeros"
                                select = "substring-before($digits, $first)"/>
   <xsl:value-of                select = "substring-after($digits, $zeros)"/>
+ </xsl:template>
+
+ <!-- Strip out all the spaces (including internal) from the type name.
+      2020-06-03: at Blair's request, we now perform other transformations
+      to some of the names.
+ -->
+ <xsl:template                  name = "other-name-type">
+  <xsl:variable                 name = "type">
+   <xsl:value-of              select = "normalize-space(OtherNameType)"/>
+  </xsl:variable>
+  <xsl:call-template            name = "cap-and-collapse">
+   <xsl:with-param              name = "str"
+                              select = "$type"/>
+  </xsl:call-template>
+ </xsl:template>
+
+ <!-- Use the NCI Thesaurus name for the URL if we have such a name. -->
+ <xsl:template                   name = "pretty-url-name">
+  <xsl:variable                  name = "ncit-name"
+                               select = "normalize-space(CGovInfo/NCITName)"/>
+  <xsl:choose>
+   <xsl:when                     test = "$ncit-name != ''">
+    <xsl:value-of              select = "$ncit-name"/>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:value-of              select = "normalize-space(PreferredName)"/>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
  <!-- Suppress default attribute copying rule. -->
