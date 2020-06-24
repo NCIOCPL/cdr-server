@@ -58,11 +58,11 @@ Volker Englisch         2008-11-13
  ==================================================================== -->
  <xsl:template                   match = "/">
   <xsl:text    disable-output-escaping ='yes'>&lt;!DOCTYPE html&gt;</xsl:text>
-  <html>
-   <head>
+  <xsl:element                    name = "html">
+   <xsl:element                   name = "head">
     <xsl:variable                 name = "cdrdocs"
                                 select = "document('cdrx:/*/CdrCtl')"/>
-    <title>
+    <xsl:element                  name = "title">
      <xsl:value-of              select = "concat('CDR',
                                            number(
                                            substring-after($docID, 'CDR')))"/>
@@ -70,7 +70,7 @@ Volker Englisch         2008-11-13
      <xsl:value-of              select = "substring-before(
                                            concat($cdrdocs/CdrDocCtl/
                                                   DocTitle, ';'), ';')"/>
-    </title>
+    </xsl:element>
 
     <style type='text/css'>
      <xsl:call-template           name = "defaultStyle"/>
@@ -93,14 +93,14 @@ Volker Englisch         2008-11-13
      table         { empty-cells: show; }
      td.cellDef    { border: 1px solid grey; padding: 2px; }
      .term-name    { background-color: yellow; }
-     .blank-row td { padding: 12px; 
+     .blank-row td { padding: 12px;
                      border: 0; }
     </style>
-   </head>
+   </xsl:element>
 
    <xsl:apply-templates         select = "GlossaryTermName"/>
 
-  </html>
+  </xsl:element>
  </xsl:template>
 
 
@@ -362,6 +362,11 @@ Volker Englisch         2008-11-13
   <xsl:param                      name = "termAudience"/>
   <xsl:param                      name = "lang"
                                 select = "'en'"/>
+
+  <!-- We don't want to pick up the concept definition from the related Glossary
+       only from the concept document itself
+       ========================================================================= -->
+  <xsl:if                         test = "not(ancestor::RelatedGlossaryTermNameLink)">
    <tr class="defTab">
     <td         xsl:use-attribute-sets = "cell1of2" class="cellDef">
      <b>Definition</b>
@@ -371,91 +376,93 @@ Volker Englisch         2008-11-13
       <xsl:when                   test = "$lang = 'en'">
        <xsl:apply-templates     select = "TermDefinition
                                             [Audience = $termAudience]/
-                                          DefinitionText"/>
+                                            DefinitionText"/>
       </xsl:when>
-      <xsl:otherwise>
+      <xsl:when                   test = "$lang = 'es'">
        <xsl:apply-templates     select = "TranslatedTermDefinition
                                             [Audience = $termAudience]/
-                                          DefinitionText"/>
-      </xsl:otherwise>
+                                            DefinitionText"/>
+      </xsl:when>
      </xsl:choose>
     </td>
    </tr>
+
    <tr class="blank-row">
     <td colspan="2"></td>
    </tr>
 
-  <xsl:if                         test = "TermDefinition
+   <xsl:if                        test = "TermDefinition
                                             [Audience = $termAudience]/
-                                          MediaLink">
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Media Link</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:choose>
-      <xsl:when                   test = "$lang = 'en'">
-       <xsl:apply-templates     select = "TermDefinition
-                                                 [Audience = $termAudience]/
-                                          MediaLink/
-                                          MediaID"
-                                  mode = "gtc"/>
-      </xsl:when>
-      <xsl:otherwise>
-       <xsl:apply-templates     select = "TranslatedTermDefinition
-                                                 [Audience = $termAudience]/
-                                          MediaLink/
-                                          MediaID"
-                                  mode = "gtc"/>
-      </xsl:otherwise>
-     </xsl:choose>
-
-    </td>
-   </tr>
-  </xsl:if>
-
-  <xsl:if                         test = "TermDefinition
+                                            MediaLink">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Media Link</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:choose>
+       <xsl:when                  test = "$lang = 'en'">
+        <xsl:apply-templates    select = "TermDefinition
                                             [Audience = $termAudience]/
-                                          EmbeddedVideo">
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Video Link</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:choose>
-      <xsl:when                   test = "$lang = 'en'">
-       <xsl:apply-templates     select = "TermDefinition
-                                                 [Audience = $termAudience]/
-                                          EmbeddedVideo/
-                                          MediaID"
+                                            MediaLink/
+                                            MediaID"
                                   mode = "gtc"/>
-      </xsl:when>
-      <xsl:otherwise>
-       <xsl:apply-templates     select = "TranslatedTermDefinition
-                                                 [Audience = $termAudience]/
-                                          EmbeddedVideo/
-                                          MediaID"
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:apply-templates    select = "TranslatedTermDefinition
+                                            [Audience = $termAudience]/
+                                            MediaLink/
+                                            MediaID"
                                   mode = "gtc"/>
-      </xsl:otherwise>
-     </xsl:choose>
+       </xsl:otherwise>
+      </xsl:choose>
 
-    </td>
-   </tr>
-  </xsl:if>
+     </td>
+    </tr>
+   </xsl:if>
 
-  <xsl:if                         test = "TermDefinition
+   <xsl:if                        test = "TermDefinition
                                             [Audience = $termAudience]/
-                                          Dictionary">
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Dictionary</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:apply-templates       select = "TermDefinition
+                                            EmbeddedVideo">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Video Link</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:choose>
+       <xsl:when                  test = "$lang = 'en'">
+        <xsl:apply-templates    select = "TermDefinition
                                             [Audience = $termAudience]/
-                                          Dictionary"/>
-    </td>
-   </tr>
+                                            EmbeddedVideo/
+                                            MediaID"
+                                  mode = "gtc"/>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:apply-templates    select = "TranslatedTermDefinition
+                                            [Audience = $termAudience]/
+                                            EmbeddedVideo/
+                                            MediaID"
+                                  mode = "gtc"/>
+       </xsl:otherwise>
+      </xsl:choose>
+
+     </td>
+    </tr>
+   </xsl:if>
+
+   <xsl:if                        test = "TermDefinition
+                                            [Audience = $termAudience]/
+                                            Dictionary">
+    <tr>
+     <td        xsl:use-attribute-sets = "cell1of2">
+      <b>Dictionary</b>
+     </td>
+     <td        xsl:use-attribute-sets = "cell2of2">
+      <xsl:apply-templates      select = "TermDefinition
+                                            [Audience = $termAudience]/
+                                            Dictionary"/>
+     </td>
+    </tr>
+   </xsl:if>
   </xsl:if>
  </xsl:template>
 
@@ -475,13 +482,13 @@ Volker Englisch         2008-11-13
  ======================================================================
  Template to display the Replacement text and PlaceHolders
  ====================================================================== -->
- <xsl:template                  match = "ReplacementText">
+ <xsl:template                   match = "ReplacementText">
   <tr>
    <td>
-    <xsl:value-of              select = "@name"/>
+    <xsl:value-of               select = "@name"/>
    </td>
    <td>
-    <xsl:value-of              select = "."/>
+    <xsl:value-of               select = "."/>
    </td>
   </tr>
  </xsl:template>
@@ -517,7 +524,7 @@ Volker Englisch         2008-11-13
                                 select = "substring-before($dateTime, 'T')"/>
   <xsl:variable                   name = "time"
                                 select = "substring-before(
-                                            substring-after($dateTime, 'T'), 
+                                            substring-after($dateTime, 'T'),
                                                                        '.')"/>
 
   <xsl:value-of                 select = "$date"/>
