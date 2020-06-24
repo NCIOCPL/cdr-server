@@ -78,12 +78,12 @@
   <xsl:variable                 name = "pronunciation">
    <pronunciation>
     <xsl:if                     test = "$audio != '' or $key != ''">
-     <audio>
-      <xsl:value-of           select = "$audio"/>
-     </audio>
      <key>
       <xsl:value-of           select = "$key"/>
      </key>
+     <audio>
+      <xsl:value-of           select = "$audio"/>
+     </audio>
     </xsl:if>
    </pronunciation>
   </xsl:variable>
@@ -125,10 +125,9 @@
 
    <!-- Dictionary elements are optional; if none, make up a node. -->
    <xsl:if                      test = "not(../Dictionary)">
-    <foo/>
     <xsl:call-template          name = "add-node">
      <xsl:with-param            name = "id"
-                                select = "$id"/>
+                              select = "$id"/>
      <xsl:with-param            name = "term-name"
                               select = "$term-name"/>
      <xsl:with-param            name = "langcode"
@@ -186,6 +185,9 @@
      <unique_id>
       <xsl:value-of           select = "@unique_id"/>
      </unique_id>
+     <template>
+      <xsl:value-of           select = "@template"/>
+     </template>
      <xsl:for-each            select = "VideoTitle">
       <title>
        <xsl:value-of          select = "normalize-space()"/>
@@ -208,9 +210,6 @@
        </caption>
       </xsl:if>
      </xsl:for-each>
-     <template>
-      <xsl:value-of           select = "@template"/>
-     </template>
     </media>
    </xsl:if>
   </xsl:if>
@@ -314,6 +313,22 @@
   <xsl:for-each               select = "*">
    <xsl:if                      test = "@UseWith = $langcode">
     <related_resources          type = "array-member">
+     <type>
+      <xsl:choose>
+       <xsl:when                test = "name() = 'RelatedSummaryRef'">
+        <xsl:text>Summary</xsl:text>
+       </xsl:when>
+       <xsl:when                test = "name() = 'RelatedDrugSummaryRef'">
+        <xsl:text>DrugSummary</xsl:text>
+       </xsl:when>
+       <xsl:when                test = "name() = 'RelatedExternalRef'">
+        <xsl:text>External</xsl:text>
+       </xsl:when>
+       <xsl:when                test = "name() = 'RelatedGlossaryTermRef'">
+        <xsl:text>GlossaryTerm</xsl:text>
+       </xsl:when>
+      </xsl:choose>
+     </type>
      <text>
       <xsl:value-of           select = "normalize-space()"/>
      </text>
@@ -335,7 +350,7 @@
       </url>
      </xsl:if>
      <xsl:if                    test = "name() = 'RelatedGlossaryTermRef'">
-      <term_id                       type = "int">
+      <term_id                  type = "int">
        <xsl:call-template       name = "extract-id-integer">
         <xsl:with-param         name = "cdr-id"
                               select = "@href"/>
@@ -351,22 +366,6 @@
        <xsl:value-of          select = "text()"/>
       </pretty_url_name>
      </xsl:if>
-     <type>
-      <xsl:choose>
-       <xsl:when                test = "name() = 'RelatedSummaryRef'">
-        <xsl:text>Summary</xsl:text>
-       </xsl:when>
-       <xsl:when                test = "name() = 'RelatedDrugSummaryRef'">
-        <xsl:text>DrugSummary</xsl:text>
-       </xsl:when>
-       <xsl:when                test = "name() = 'RelatedExternalRef'">
-        <xsl:text>External</xsl:text>
-       </xsl:when>
-       <xsl:when                test = "name() = 'RelatedGlossaryTermRef'">
-        <xsl:text>GlossaryTerm</xsl:text>
-       </xsl:when>
-      </xsl:choose>
-     </type>
     </related_resources>
    </xsl:if>
   </xsl:for-each>
@@ -389,7 +388,7 @@
                               select = "$tier"/>
      </xsl:call-template>
     </xsl:if>
-    <xsl:text>.cancer.gov/images/pdq/CDR</xsl:text>
+    <xsl:text>.cancer.gov/pdq/media/images/</xsl:text>
     <xsl:value-of             select = "$id"/>
     <xsl:if                     test = "$width != 'original'">
      <xsl:text>-</xsl:text>
@@ -425,15 +424,6 @@
    <term_id                     type = "int">
     <xsl:value-of             select = "$id"/>
    </term_id>
-   <term_name>
-    <xsl:value-of             select = "$term-name"/>
-   </term_name>
-   <first_letter           processor = "lowercase_first_letter">
-    <xsl:value-of             select = "$term-name"/>
-   </first_letter>
-   <pretty_url_name        processor = "clean_pretty_url">
-    <xsl:value-of             select = "$term-name"/>
-   </pretty_url_name>
    <language>
     <xsl:value-of             select = "$langcode"/>
    </language>
@@ -446,19 +436,126 @@
                               select = "$audience"/>
     </xsl:call-template>
    </audience>
-   <xsl:copy-of               select = "$definition"/>
+   <term_name>
+    <xsl:value-of             select = "$term-name"/>
+   </term_name>
+   <first_letter           processor = "lowercase_first_letter">
+    <xsl:value-of             select = "$term-name"/>
+   </first_letter>
+   <pretty_url_name        processor = "clean_pretty_url">
+    <xsl:value-of             select = "$term-name"/>
+   </pretty_url_name>
    <xsl:copy-of               select = "$pronunciation"/>
+   <xsl:copy-of               select = "$definition"/>
+   <xsl:apply-templates       select = "../../RelatedInformation">
+    <xsl:with-param             name = "langcode"
+                              select = "$langcode"/>
+   </xsl:apply-templates>
    <xsl:apply-templates       select = "../../MediaLink|../../EmbeddedVideo">
     <xsl:with-param             name = "langcode"
                               select = "$langcode"/>
     <xsl:with-param             name = "audience"
                               select = "$audience"/>
    </xsl:apply-templates>
-   <xsl:apply-templates       select = "../../RelatedInformation">
+   <xsl:call-template           name = "other-languages">
+    <xsl:with-param             name = "langcode">
+     <xsl:choose>
+      <xsl:when                 test = "$langcode = 'en'">
+       <xsl:value-of          select = "'es'"/>
+      </xsl:when>
+      <xsl:otherwise>
+       <xsl:value-of          select = "'en'"/>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:with-param>
+    <xsl:with-param             name = "audience"
+                              select = "$audience"/>
+    <xsl:with-param             name = "dictionary"
+                              select = "$dictionary"/>
+   </xsl:call-template>
+  </node>
+ </xsl:template>
+
+ <!-- Make it easier for the API to know if the language can be toggled. -->
+ <xsl:template                  name = "other-languages">
+  <xsl:param                    name = "langcode"/>
+  <xsl:param                    name = "audience"/>
+  <xsl:param                    name = "dictionary"/>
+  <xsl:variable                 name = "matched">
+   <xsl:call-template           name = "matching-definitions">
     <xsl:with-param             name = "langcode"
                               select = "$langcode"/>
-   </xsl:apply-templates>
-  </node>
+    <xsl:with-param             name = "audience"
+                              select = "$audience"/>
+    <xsl:with-param             name = "dictionary"
+                              select = "$dictionary"/>
+   </xsl:call-template>
+  </xsl:variable>
+  <xsl:if                       test = "normalize-space($matched)">
+   <xsl:variable                name = "term-name">
+    <xsl:choose>
+     <xsl:when                  test = "$langcode = 'es'">
+      <xsl:value-of           select = "../../SpanishTermName"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of           select = "../../TermName"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:variable>
+   <xsl:variable                name = "name">
+    <xsl:value-of             select = "normalize-space($term-name)"/>
+   </xsl:variable>
+   <other_languages             type = "array-member">
+    <language>
+     <xsl:value-of            select = "$langcode"/>
+    </language>
+    <term_name>
+     <xsl:value-of            select = "$name"/>
+    </term_name>
+    <pretty_url_name       processor = "clean_pretty_url">
+     <xsl:value-of            select = "$name"/>
+    </pretty_url_name>
+   </other_languages>
+  </xsl:if>
+ </xsl:template>
+
+ <!-- Find matching definitions in another language.
+      Result is a non-empty string if at least one found.
+ -->
+ <xsl:template                  name = "matching-definitions">
+  <xsl:param                    name = "langcode"/>
+  <xsl:param                    name = "audience"/>
+  <xsl:param                    name = "dictionary"/>
+  <xsl:choose>
+   <xsl:when                    test = "$langcode = 'es'">
+    <xsl:for-each             select = "../../SpanishTermDefinition">
+     <xsl:if                    test = "Audience = $audience">
+      <xsl:if                   test = "Dictionary = $dictionary">
+       <xsl:text>x</xsl:text>
+      </xsl:if>
+      <xsl:if                   test = "not(Dictionary)">
+       <xsl:if                  test = "$dictionary = 'NotFound'">
+        <xsl:text>x</xsl:text>
+       </xsl:if>
+      </xsl:if>
+     </xsl:if>
+    </xsl:for-each>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:for-each             select = "../../TermDefinition">
+     <xsl:if                    test = "Audience = $audience">
+      <xsl:if                   test = "Dictionary = $dictionary">
+       <xsl:text>x</xsl:text>
+      </xsl:if>
+      <xsl:if                   test = "not(Dictionary)">
+       <xsl:if                  test = "$dictionary = 'NotFound'">
+        <xsl:text>x</xsl:text>
+       </xsl:if>
+      </xsl:if>
+     </xsl:if>
+    </xsl:for-each>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
  <!-- Extract significant digits from the CDR ID, without CDR0* prefix. -->
@@ -495,7 +592,7 @@
                               select = "$tier"/>
       </xsl:call-template>
      </xsl:if>
-     <xsl:text>.cancer.gov/audio/pdq/</xsl:text>
+     <xsl:text>.cancer.gov/pdq/media/audio/</xsl:text>
      <xsl:value-of            select = "$id"/>
      <xsl:text>.mp3</xsl:text>
     </xsl:if>

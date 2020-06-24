@@ -19,6 +19,12 @@ CDECDR-3735: [Media] Audio files ready to be uploaded
  <xsl:output                    method = "xml"
                   omit-xml-declaration = "no"/>
 
+ <!-- Stylesheet level parameter isQC, passed in from the caller -->
+ <!-- Setting default to PP report -->
+
+ <xsl:param                       name = "isQC"
+                                select = "'N'"/>
+
  <!--
  =================================================================
  Copy control information and generate current date
@@ -31,23 +37,29 @@ CDECDR-3735: [Media] Audio files ready to be uploaded
 
 
  <!--
- =================================================================
+ =====================================================================
  Denormalize the GlossaryTermConcept information
- ================================================================= -->
+
+ Modified to create two paths
+ - path for publishable documents including publishable version of GTC
+ - path for QC reports including CWD version
+                                                     VE, 2020-02-27
+ ===================================================================== -->
  <xsl:template                   match = "GlossaryTermConcept">
   <xsl:variable                   name = "conceptId"
                                 select = "@cdr:ref"/>
 
+  <xsl:variable                   name = "docVersion">
+   <xsl:choose>
+    <xsl:when                     test = "$isQC = 'N'">
+     <xsl:text>/lastp</xsl:text>
+    </xsl:when>
+   </xsl:choose>
+  </xsl:variable>
+
   <xsl:variable                   name = "concept"
                                 select = "document(concat('cdr:', $conceptId,
-                                                          '/last'))"/>
-  <!-- xsl:element                    name = "GlossaryTermConcept">
-   <xsl:attribute                 name = "cdr:ref">
-    <xsl:value-of               select = "$conceptId"/>
-   </xsl:attribute>
-   <xsl:copy-of                 select = "$concept/
-                                          GlossaryTermConcept/*"/>
-  </xsl:element -->
+                                                                  $docVersion))"/>
   <xsl:element                    name = "GlossaryTermConcept">
    <xsl:attribute                 name = "cdr:ref">
     <xsl:value-of               select = "$conceptId"/>
@@ -98,7 +110,7 @@ CDECDR-3735: [Media] Audio files ready to be uploaded
 
   <xsl:variable                   name = "related"
                                 select = "document(concat('cdr:', $relatedId,
-                                                          '/lastp'))"/>
+                                                                  '/lastp'))"/>
   <xsl:element                    name = "{name()}">
    <xsl:for-each                select = "@*">
     <xsl:attribute                name = "{name()}">
@@ -125,7 +137,7 @@ CDECDR-3735: [Media] Audio files ready to be uploaded
 
   <xsl:variable                   name = "related"
                                 select = "document(concat('cdr:', $relatedId,
-                                                          '/lastp'))"/>
+                                                                  '/lastp'))"/>
   <xsl:element                    name = "{name()}">
    <xsl:for-each                select = "@*">
     <xsl:attribute                name = "{name()}">
@@ -152,7 +164,7 @@ CDECDR-3735: [Media] Audio files ready to be uploaded
 
   <xsl:variable                   name = "relatedGTN"
                                 select = "document(concat('cdr:', $relatedGTNId,
-                                                          '/lastp'))"/>
+                                                                  '/lastp'))"/>
   <xsl:element                    name = "{name()}">
    <xsl:for-each                select = "@*">
     <xsl:attribute                name = "{name()}">
@@ -173,7 +185,7 @@ CDECDR-3735: [Media] Audio files ready to be uploaded
 
     <xsl:variable                 name = "relatedGTC"
                                 select = "document(concat('cdr:', $relatedGTCId,
-                                                          '/last'))"/>
+                                                                  '/lastp'))"/>
     <xsl:apply-templates        select = "$relatedGTC/GlossaryTermConcept/
                                             TermDefinition |
                                           $relatedGTC/GlossaryTermConcept/
