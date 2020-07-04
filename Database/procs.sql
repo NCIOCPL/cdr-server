@@ -584,19 +584,6 @@ AS
     DROP TABLE #linked_docs
 
 /*
- * A procedure that allows us to update the unique ID of the
- * pub_proc table.  This procedure can be used to adjust the
- * next Job-ID in order to avoid error messages from Gatekeeper
- * due to non-unique Job-IDs after a DB refresh.
- */
-CREATE PROCEDURE cdr_set_next_job_ID
-    @newID int
-AS
-    DBCC CHECKIDENT (pub_proc, RESEED, @newID)
-GO
-
-
-/*
  * Determine the counts of active and closed protocols to which a
  * person is connected, either through a lead organization on the
  * protocol, or one of the participating sites.
