@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """Compare filters in Subversion against those in the CDR.
 """
 
