@@ -580,9 +580,23 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
                                            $SummaryRefID = $thisSummaryId">
      <xsl:text>/last</xsl:text>
     </xsl:when>
+
+    <!-- Exit with an error if and empty tag is found or no publishable
+         version exists -->
+    <xsl:when                      test = "not($SummaryRefID)
+                                           or
+                                           normalize-space($SummaryRefID) = ''">
+     <xsl:message             terminate = "yes">
+      <xsl:text>Empty </xsl:text>
+      <xsl:value-of              select = "name()"/>
+      <xsl:text> tag found</xsl:text>
+     </xsl:message>
+    </xsl:when>
     <xsl:when                      test = "$pubVersion = 0">
      <xsl:message             terminate = "yes">
-      <xsl:text>Publishable version doesn't exist for </xsl:text>
+      <xsl:text>Publishable version doesn't exist: </xsl:text>
+      <xsl:value-of              select = "name()"/>
+      <xsl:text>/@</xsl:text>
       <xsl:value-of              select = "$SummaryRefID"/>
      </xsl:message>
     </xsl:when>
