@@ -29,6 +29,16 @@ OCECDR-4122: Changes the order of information in DIS
  <xsl:variable                    name = "whoAmI"
                                 select = "'DrugInfo'"/>
 
+ <!-- 
+ The following two variable must be set since we're reusing templates
+ originally developed for Summaries
+ The DIS documents are for Patients only and don't get translated to Spanish 
+ =========================================================================== -->
+ <xsl:variable                    name = "sumAudience"
+                                select = "'Patients'"/>
+ <xsl:variable                    name = "language"
+                                select = "'English'"/>
+
  <!--
  ====================================================================
  Root element.
@@ -575,10 +585,28 @@ OCECDR-4122: Changes the order of information in DIS
     </xsl:element>
    </xsl:if>
 
-  <xsl:apply-templates            mode = "copy"/>
+   <!--
+   We don't want to copy the entire EmbeddedVideo node as we do for the other elements.  
+   It gets formatted by the "Vendor Filter Templates" module but the template doesn't
+   have a "mode".
+   =================================================================================== -->
+   <!-- Test
+   <xsl:apply-templates          select = "*[not(self::EmbeddedVideo)]" 
+                                   mode = "copy"/>
+   <xsl:apply-templates          select = "EmbeddedVideo"/>
+   -->
+   <xsl:apply-templates            mode = "copy"/>
   </xsl:element>
  </xsl:template>
 
+
+ <!--
+ Template to redirect the 'mode = "copy"' template fpr EmbeddedVideo
+ =================================================================== -->
+ <xsl:template                   match = "EmbeddedVideo"
+                                  mode = "copy">
+  <xsl:apply-templates          select = "."/>
+ </xsl:template>
 
  <!--
  =====================================================================
@@ -592,7 +620,22 @@ OCECDR-4122: Changes the order of information in DIS
                                           ItemizedList |
                                           OrderedList"
                                   mode = "copy"/>
+
  </xsl:template>
+
+
+ <!--
+ <xsl:template                   match = "EmbeddedVideo"
+                                  mode = "copy">
+  <xsl:copy>
+   <xsl:value-of                select = "name()"/>
+  -->
+  <!--xsl:apply-templates          select = "."/ -->
+   <!--
+   <xsl:copy-of  select = "Caption"/>
+  </xsl:copy>
+ </xsl:template>
+ -->
 
 
  <!--
