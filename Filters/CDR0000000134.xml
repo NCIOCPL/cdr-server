@@ -217,62 +217,63 @@ Filter to create the vendor Terminology XML
 
 
    <!--
-   Conctruct the URL for NCI "active clinical trials" link
+   Construct the URL for NCI "active clinical trials" link.
+   We only do this if the concept ID exists and is published.
+   See https://tracker.nci.nih.gov/browse/OCECDR-1806.
    ======================================================== -->
-   <!--
-   If the SQL query found a DrugInfo Summary with a term link to this
-   document, we need to suppress the display of the clinical search
-   string.
-   ================================================================== -->
-   <xsl:if                        test = "not($queryRows/SqlResult/row)
-                                          and
-                                          not(/Term/TermType/TermTypeName
-                                                    = 'Drug Combination')">
+   <xsl:if                       test = "not($conceptId = '')
+                                        and
+                                        not(/Term/NCIThesaurusConcept
+                                            [@Public = 'No'])">
+
     <!--
-    We also need to suppress the link if the ConceptId isn't published yet
-    ====================================================================== -->
-    <xsl:if                       test = "not($conceptId = '')
-                                          and
-                                          not(/Term/
-                                               NCIThesaurusConcept[@Public = 'No'])">
-     <xsl:text> Check for </xsl:text>
+    Add a wrapper so this block can be easily stripped for downstream
+    consumers which will create these links using more sophisticated
+    logic.
+    See https://tracker.nci.nih.gov/browse/OCECDR-4892 and
+    https://github.com/NCIOCPL/drug-dictionary-api/issues/34.
+    ================================================================== -->
+    <ExtraDefinitionLinks>
 
-     <xsl:element                 name = "ExternalRef">
-      <xsl:attribute              name = "xref">
-       <xsl:text>https://www.cancer.gov/about-cancer/treatment</xsl:text>
-       <xsl:text>/clinical-trials/intervention/</xsl:text>
-       <xsl:value-of            select = "$conceptId"/>
+     <!--
+     If the SQL query found a DrugInfo Summary with a term link to this
+     document, we need to suppress the display of the clinical search
+     string.
+     [Need a citation for this requirement.]
+     ================================================================== -->
+     <xsl:if                        test = "not($queryRows/SqlResult/row)
+                                           and
+                                           not(/Term/TermType/TermTypeName
+                                           = 'Drug Combination')">
+
+      <xsl:text> Check for </xsl:text>
+      <xsl:element                 name = "ExternalRef">
+       <xsl:attribute              name = "xref">
+        <xsl:text>https://www.cancer.gov/about-cancer/treatment</xsl:text>
+        <xsl:text>/clinical-trials/intervention/</xsl:text>
+        <xsl:value-of            select = "$conceptId"/>
+       </xsl:attribute>
+       <xsl:text>active clinical trials</xsl:text>
+      </xsl:element>
+      <xsl:text> using this agent.</xsl:text>
+     </xsl:if>
+
+     <!--
+     Add the URL for NCI concept ID.
+     ======================================================== -->
+     <xsl:text> (</xsl:text>
+     <xsl:element                  name = "ExternalRef">
+      <xsl:attribute               name = "xref">
+       <xsl:text>https://ncit.nci.nih.gov/</xsl:text>
+       <xsl:text>ncitbrowser/ConceptReport.jsp?</xsl:text>
+       <xsl:text>dictionary=NCI%20Thesaurus&#x26;code=</xsl:text>
+       <xsl:value-of             select = "$conceptId"/>
       </xsl:attribute>
-      <xsl:text>active clinical trials</xsl:text>
+      <xsl:value-of              select = "../DefinitionSource/
+                                           DefinitionSourceName"/>
      </xsl:element>
-
-     <xsl:text> using this agent.</xsl:text>
-    </xsl:if>
-   </xsl:if>
-
-
-
-   <!--
-   Conctruct the URL for NCI concept ID but only if the
-   ID is published already
-   Same condition as with the clinical trials link
-   ======================================================== -->
-   <xsl:if                        test = "not($conceptId = '')
-                                          and
-                                          not(/Term/
-                                               NCIThesaurusConcept[@Public = 'No'])">
-    <xsl:text> (</xsl:text>
-    <xsl:element                  name = "ExternalRef">
-     <xsl:attribute               name = "xref">
-      <xsl:text>https://ncit.nci.nih.gov/</xsl:text>
-      <xsl:text>ncitbrowser/ConceptReport.jsp?</xsl:text>
-      <xsl:text>dictionary=NCI%20Thesaurus&#x26;code=</xsl:text>
-      <xsl:value-of             select = "$conceptId"/>
-     </xsl:attribute>
-     <xsl:value-of              select = "../DefinitionSource/
-                                          DefinitionSourceName"/>
-    </xsl:element>
-    <xsl:text>)</xsl:text>
+     <xsl:text>)</xsl:text>
+    </ExtraDefinitionLinks>
    </xsl:if>
   </xsl:copy>
  </xsl:template>
