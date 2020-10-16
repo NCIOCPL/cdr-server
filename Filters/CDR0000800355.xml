@@ -93,7 +93,8 @@
      <xsl:apply-templates     select = "DefinitionText"/>
     </text>
     <html>
-     <xsl:apply-templates     select = "DefinitionText"/>
+     <xsl:apply-templates     select = "DefinitionText"
+                                mode = "html"/>
     </html>
    </definition>
   </xsl:variable>
@@ -146,9 +147,38 @@
  </xsl:template>
 
  <!-- Recursively pull out just the text from the definition. -->
- <xsl:template match = "DefinitionText">
-  <xsl:apply-templates select = "*|text()"/>
+ <xsl:template                 match = "DefinitionText">
+  <xsl:apply-templates        select = "*|text()"/>
  </xsl:template>
+
+ <xsl:template                 match = "DefinitionText"
+                                mode = "html">
+  <xsl:apply-templates        select = "*|text()"
+                                mode = "html"/>
+ </xsl:template>
+
+ <!-- Mark up ExternalRef links inside the definition. -->
+ <xsl:template                 match = "ExternalRef"
+                                mode = "html">
+  <xsl:text>&lt;a href="</xsl:text>
+  <xsl:value-of               select = "@xref"/>
+  <xsl:text>"&gt;</xsl:text>
+  <xsl:value-of               select = "text()"/>
+  <xsl:text>&lt;/a&gt;</xsl:text>
+ </xsl:template>
+
+ <!--
+ Mark up SummaryRef links (for LOE refs) inside the definition.
+ ============================================================== -->
+ <xsl:template                 match = "SummaryRef"
+                                mode = "html">
+  <xsl:text>&lt;a href="</xsl:text>
+  <xsl:value-of               select = "@url"/>
+  <xsl:text>"&gt;</xsl:text>
+  <xsl:value-of               select = "text()"/>
+  <xsl:text>&lt;/a&gt;</xsl:text>
+ </xsl:template>
+
 
  <!-- Find the matching video for this node. -->
  <xsl:template                 match = "EmbeddedVideo">
