@@ -3,6 +3,9 @@
 <xsl:transform                 version = "1.0"
                              xmlns:xsl ="http://www.w3.org/1999/XSL/Transform">
  <xsl:output                    method = "xml"/>
+
+ <xsl:include href = "cdr:name:Module: Drupal CMS Filter Templates"/>
+
  <xsl:param                       name = "section"/>
  <!-- Default value is screen -->
  <xsl:param                       name = "targetedDevice"
@@ -86,6 +89,7 @@
       </xsl:otherwise>
     </xsl:choose>
   </xsl:variable>
+
 
   <!--
   ================================================================ -->
@@ -205,6 +209,7 @@
     </html>
   </xsl:template>
 
+
   <!--
   Template to create TOC or KeyPoint boxes
   =================================================================== -->
@@ -226,8 +231,8 @@
       <xsl:with-param               name = "topSection"
                                   select = "$topSection"/>
     </xsl:apply-templates>
-
   </xsl:template>
+
 
   <!--
   Template to use jQuery to create Enlarge buttons for Tables and
@@ -389,8 +394,6 @@
   </xsl:template>
 
 
-
-
   <!--
   Template to display basic meta data information
   *** for testing only ***
@@ -410,6 +413,7 @@
       </p>
     </div>
   </xsl:template>
+
 
   <!--
   Template to remove display of SectionMetaData on any level
@@ -696,26 +700,6 @@
 
 
   <!--
-  ================================================================ -->
-  <xsl:template                  match = "Para">
-    <xsl:param                     name = "topSection"
-                                 select = "'para'"/>
-    <xsl:element                   name = "p">
-      <xsl:attribute                name = "id">
-        <xsl:value-of              select = "@id"/>
-      </xsl:attribute>
-      <xsl:attribute                name = "tabindex">
-        <xsl:text>-1</xsl:text>
-      </xsl:attribute>
-      <xsl:apply-templates>
-        <xsl:with-param          name = "topSection"
-                               select = "$topSection"/>
-      </xsl:apply-templates>
-    </xsl:element>
-  </xsl:template>
-
-
-  <!--
   An itemized list will be converted into a DD/DL if the style is
   simple
   ================================================================ -->
@@ -761,55 +745,6 @@
   </xsl:template>
 
   <!--
-  Ordered lists will be displayed as is
-  Unordered lists will be displayed without style and without
-  compact mode.  No 'dash', no 'bullet'.
-  Style="simple" will be converted into class="no-bullets" (indentation?)
-  and eventually converted to some sort of address block when available
-  ================================================================ -->
-  <xsl:template                  match = "@Style">
-    <xsl:choose>
-      <xsl:when                      test = ". = 'bullet'"/>
-      <!-- Arabic (i.e. class="decimal") is the default.
-         Don't need to include this in the HTML output -->
-      <xsl:when                      test = ". = 'Arabic'"/>
-      <xsl:otherwise>
-        <xsl:attribute                 name = "class">
-          <xsl:choose>
-            <xsl:when                    test = ". = 'LAlpha'">
-              <xsl:text>lower-alpha</xsl:text>
-            </xsl:when>
-            <xsl:when                    test = ". = 'LRoman'">
-              <xsl:text>lower-roman</xsl:text>
-            </xsl:when>
-            <xsl:when                    test = ". = 'UAlpha'">
-              <xsl:text>upper-alpha</xsl:text>
-            </xsl:when>
-            <xsl:when                    test = ". = 'URoman'">
-              <xsl:text>upper-roman</xsl:text>
-            </xsl:when>
-            <xsl:when                    test = ". = 'circle'">
-              <xsl:text>list-circle</xsl:text>
-            </xsl:when>
-            <xsl:when                    test = ". = 'square'">
-              <xsl:text>list-square</xsl:text>
-            </xsl:when>
-            <xsl:when                    test = ". = 'dash'">
-              <xsl:text>list-dash</xsl:text>
-            </xsl:when>
-            <xsl:when                    test = ". = 'simple'">
-              <xsl:text>pdq-address-block</xsl:text>
-            </xsl:when>
-            <xsl:otherwise>
-              <xsl:text>style_undefined</xsl:text>
-            </xsl:otherwise>
-          </xsl:choose>
-        </xsl:attribute>
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
-
-  <!--
   ================================================================ -->
   <xsl:template                  match = "OrderedList">
     <xsl:param                     name = "topSection"
@@ -833,18 +768,6 @@
     </xsl:element>
   </xsl:template>
 
-  <!--
-  ================================================================ -->
-  <xsl:template                  match = "ListItem">
-    <xsl:param                     name = "topSection"
-                                 select = "'li'"/>
-    <li>
-      <xsl:apply-templates>
-        <xsl:with-param          name = "topSection"
-                               select = "$topSection"/>
-      </xsl:apply-templates>
-    </li>
-  </xsl:template>
 
   <!--
   ================================================================ -->
@@ -855,17 +778,6 @@
     </dd>
   </xsl:template>
 
-  <!--
-  ================================================================ -->
-  <xsl:template                  match = "ListTitle">
-    <xsl:element                   name = "p">
-      <xsl:attribute                name = "class">
-        <xsl:text>pdq-list-title</xsl:text>
-      </xsl:attribute>
-
-      <xsl:apply-templates/>
-    </xsl:element>
-  </xsl:template>
 
   <!--
   Template to add a Note/Nota to the text
@@ -1020,6 +932,7 @@
     </strong>
   </xsl:template>
 
+
   <!--
   Template to handle QandAEntry sets
   ================================================================ -->
@@ -1060,6 +973,7 @@
     </xsl:element>
   </xsl:template>
 
+
   <!--
   ================================================================ -->
   <xsl:template                  match = "Strong">
@@ -1072,6 +986,7 @@
       </xsl:apply-templates>
     </xsl:element>
   </xsl:template>
+
 
   <!--
   Template to link to the Glossary terms (by language)
@@ -1213,6 +1128,7 @@
     </xsl:if>
   </xsl:template>
 
+
   <!--
   Template to link to the Cancer.gov trials information of the
   protocol
@@ -1258,6 +1174,8 @@
       </xsl:for-each>
     </xsl:if>
   </xsl:template>
+
+
   <!--
   ================================================================ -->
   <xsl:template                  match = "ExternalRef">
@@ -1488,159 +1406,6 @@
       </xsl:element>
       <xsl:apply-templates/>
     </xsl:element>
-  </xsl:template>
-
-  <!--
-  =========================================================================
-  Template to display the videos within a wrapped figure element
-  ========================================================================= -->
-  <xsl:template                  match = "EmbeddedVideo">
-   <xsl:element                   name = "div">
-    <xsl:attribute                name = "data-embed-button">
-     <xsl:text>media_entity_embed</xsl:text>
-    </xsl:attribute>
-    <xsl:attribute                name = "data-entity-embed-display">
-     <xsl:call-template           name = "video-template">
-      <xsl:with-param             name = "template"
-                                select = "@template"/>
-     </xsl:call-template>
-    </xsl:attribute>
-    <xsl:attribute                name = "data-entity-type">
-     <xsl:text>media</xsl:text>
-    </xsl:attribute>
-    <xsl:attribute                name = "data-caption">
-     <xsl:text></xsl:text>
-    </xsl:attribute>
-    <xsl:attribute                name = "class">
-     <xsl:text>embedded-entity</xsl:text>
-     <xsl:choose>
-      <xsl:when                   test = "contains(@template, 'Right')">
-       <xsl:text> align-right</xsl:text>
-      </xsl:when>
-      <xsl:otherwise>
-       <xsl:text> align-center</xsl:text>
-      </xsl:otherwise>
-     </xsl:choose>
-    </xsl:attribute>
-    <xsl:element                  name = "figure">
-     <xsl:attribute               name = "class">
-      <xsl:text>video</xsl:text>
-     </xsl:attribute>
-     <xsl:if                      test = "not(contains(@template, 'NoTitle'))">
-      <xsl:element                name = "h4">
-       <xsl:attribute             name = "class">
-        <xsl:text>title</xsl:text>
-       </xsl:attribute>
-       <xsl:attribute             name = "tabindex">
-        <xsl:text>0</xsl:text>
-       </xsl:attribute>
-       <xsl:value-of            select = "VideoTitle"/>
-      </xsl:element>
-     </xsl:if>
-     <xsl:call-template           name = "youtube-player"/>
-     <xsl:apply-templates       select = "Caption"/>
-    </xsl:element> <!-- figure element for video -->
-   </xsl:element> <!-- top level div element for video -->
-  </xsl:template>
-
-
-  <!--
-  =========================================================================
-  Map EmbeddedVideo/@template value to data-entity-embed-display value.
-  Invoked by the EmbeddedVideo template immediately above.
-  ========================================================================= -->
-  <xsl:template                   name = "video-template">
-   <xsl:param                     name = "template"/>
-   <xsl:choose>
-    <xsl:when                     test = "$template = 'Video100Title'">
-     <xsl:text>view_mode:media.video_display_large_title</xsl:text>
-    </xsl:when>
-    <xsl:when                     test = "$template = 'Video100NoTitle'">
-     <xsl:text>view_mode:media.video_display_large_no_title</xsl:text>
-    </xsl:when>
-    <xsl:when                     test = "$template = 'Video75Title'">
-     <xsl:text>view_mode:media.video_display_medium_title</xsl:text>
-    </xsl:when>
-    <xsl:when                     test = "$template = 'Video75NoTitle'">
-     <xsl:text>view_mode:media.video_display_medium_no_title</xsl:text>
-    </xsl:when>
-    <xsl:when                     test = "$template = 'Video50TitleRight'">
-     <xsl:text>view_mode:media.video_display_small_title</xsl:text>
-    </xsl:when>
-    <xsl:otherwise> <!-- Video50NoTitle or Video50NoTitleRight -->
-     <xsl:text>view_mode:media.video_display_small_no_title</xsl:text>
-    </xsl:otherwise>
-   </xsl:choose>
-  </xsl:template>
-
-
-  <!--
-  =========================================================================
-  Template to display the videos within a wrapped figure element.
-  Invoked by the EmbeddedVideo template above.
-  ========================================================================= -->
-  <xsl:template                   name = "youtube-player">
-   <xsl:element                   name = "div">
-    <xsl:attribute                name = "id">
-     <xsl:text>ytplayer-</xsl:text>
-     <xsl:value-of              select = "@unique_id"/>
-    </xsl:attribute>
-    <xsl:attribute                name = "class">
-     <xsl:text>flex-video widescreen</xsl:text>
-    </xsl:attribute>
-    <xsl:attribute                name = "data-video-url">
-     <xsl:text>https://www.youtube.com/embed/</xsl:text>
-     <xsl:value-of              select = "@unique_id"/>
-     <xsl:text>?feature=oembed&amp;autoplay=1</xsl:text>
-    </xsl:attribute>
-    <xsl:attribute                name = "data-video-title">
-     <xsl:value-of              select = "VideoTitle"/>
-    </xsl:attribute>
-    <xsl:element                  name = "iframe">
-     <xsl:attribute               name = "width">
-      <xsl:text>560</xsl:text>
-     </xsl:attribute>
-     <xsl:attribute               name = "height">
-      <xsl:text>315</xsl:text>
-     </xsl:attribute>
-     <xsl:attribute               name = "src">
-      <xsl:text>https://www.youtube-nocookie.com/embed/</xsl:text>
-      <xsl:value-of             select = "@unique_id"/>
-      <xsl:text>?rel=0</xsl:text>
-     </xsl:attribute>
-     <xsl:attribute               name = "frameborder">
-      <xsl:text>0</xsl:text>
-     </xsl:attribute>
-     <xsl:attribute               name = "allow">
-      <xsl:text>accelerometer; autoplay; encrypted-media; gyroscope</xsl:text>
-      <xsl:text>; picture-in-picture</xsl:text>
-     </xsl:attribute>
-     <xsl:attribute               name = "title">
-      <xsl:value-of             select = "VideoTitle"/>
-     </xsl:attribute>
-     <xsl:attribute               name = "alt">
-      <xsl:value-of             select = "VideoTitle"/>
-     </xsl:attribute>
-     <xsl:attribute               name = "allowfullscreen"/>
-    </xsl:element> <!-- iframe -->
-   </xsl:element> <!-- ytplayer div -->
-  </xsl:template>
-
-
-  <!--
-  =========================================================================
-  Template to display the image caption element
-
-  JIRA Ticket 2832 - make sure figcaption tag is not rendered when no
-  caption exists
-  ========================================================================= -->
-  <xsl:template                  match = "Caption[not(.='')]">
-   <xsl:element                   name = "figcaption">
-    <xsl:attribute                name = "class">
-     <xsl:text>caption-container</xsl:text>
-    </xsl:attribute>
-    <xsl:apply-templates/>
-   </xsl:element>
   </xsl:template>
 
 
