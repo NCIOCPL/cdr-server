@@ -650,9 +650,10 @@ class CommandSet:
     def _get_glossary_map(self, node):
         lang = "en" if node.tag == "CdrGetGlossaryMap" else "es"
         dictionary = self.get_node_text(node.find("Dictionary"), "").strip()
+        audience = self.get_node_text(node.find("Audience"), "").strip()
         response = etree.Element(node.tag + "Resp")
-        args = lang, dictionary
-        for doc in GlossaryTermName.get_mappings(self.session, *args):
+        opts = dict(language=lang, dictionary=dictionary, audience=audience)
+        for doc in GlossaryTermName.get_mappings(self.session, **opts):
             wrapper = etree.SubElement(response, "Term", id=str(doc.id))
             etree.SubElement(wrapper, "Name").text = doc.name
             for phrase in doc.phrases:
