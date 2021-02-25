@@ -23,6 +23,7 @@ OCECDR-4511 - Remove template which adds nct_id attributes to ProtocolRefs
 
  <xsl:include href = "cdr:name:Module: Citation Denormalization"/>
  <xsl:include href = "cdr:name:Module: Multimedia Denormalization"/>
+
  <xsl:variable                     name = "sumLanguage">
   <xsl:choose>
    <xsl:when                       test = "/Summary
@@ -35,7 +36,6 @@ OCECDR-4511 - Remove template which adds nct_id attributes to ProtocolRefs
    </xsl:otherwise>
   </xsl:choose>
  </xsl:variable>
-
 
  <xsl:variable                    name = "sumType"
                                 select = "/Summary
@@ -159,8 +159,6 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
    </xsl:choose>
   </xsl:variable>
 
-
-
   <!--
   Cancel the report if we can't find the board ID for the English board to
   retrieve the board information.
@@ -174,7 +172,6 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
   <xsl:variable                   name = "BoardInfo"
                                 select = "document(concat('cdr:',$BoardID,
                                                            '/last'))"/>
-
    <xsl:choose>
     <xsl:when                     test = "$sumLanguage = 'EN'">
      <xsl:element                 name = "Board">
@@ -282,6 +279,7 @@ SELECT doc_id AS "CDRID"
                                                    $loeNormIDES)))"/>
 
    <!-- xsl:value-of select = "$loeNormIDES"/ -->
+
    <xsl:variable                  name = "loeIDES">
     <xsl:for-each               select = "$queryRowsLoe
                                              /SqlResult
@@ -289,6 +287,19 @@ SELECT doc_id AS "CDRID"
      <xsl:value-of              select = "col[@name='CDRID']"/>
     </xsl:for-each>
    </xsl:variable>
+
+   <!--
+   Cancel the report if we can't find a translation of the LOE Summary
+   for this document type/board.
+
+   Should we be checking this for English Summaries, too? VE, 2021-02-10
+   ==================================================================== -->
+   <xsl:if                        test = "$loeIDES = ''">
+    <xsl:message             terminate = "yes">
+     <xsl:text>Spanish LOE translation missing for this summary type and board!</xsl:text>
+    </xsl:message>
+   </xsl:if>
+
    <xsl:variable                  name = "loeInfoES"
                                 select = "document(concat('cdr:',
                                           format-number($loeIDES,
@@ -520,34 +531,6 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
   </xsl:element>
  </xsl:template>
 
-
-
-
-
- <!--
- =================================================================
- Template to denormalize the summary section intervention terms
- ================================================================= -->
-<!--
- <xsl:template                   match = "Diagnosis    |
-                                          Intervention |
-                                          Drug">
-  <xsl:variable                   name = "termID"
-                                select = "@cdr:ref"/>
-  <xsl:variable                   name = "termDoc"
-                                select = "document(concat('cdr:',$termID,
-                                                           '/last'))"/>
-  <xsl:element                    name = "{name()}">
-    <xsl:for-each               select = "@*">
-     <xsl:attribute               name = "{name()}">
-      <xsl:value-of             select = "."/>
-     </xsl:attribute>
-    </xsl:for-each>
-    <xsl:apply-templates        select = "$termDoc/Term
-                                           /PreferredName"/>
-  </xsl:element>
- </xsl:template>
--->
 
  <!--
  =================================================================
