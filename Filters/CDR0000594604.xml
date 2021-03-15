@@ -17,10 +17,22 @@
   <xsl:variable                   name = "cdrId"
                                 select = "document('cdrutil:/docid')"/>
   <xsl:variable                   name = "def"
-                                select = "TermDefinition[1]/DefinitionText"/>
-  <xsl:variable                   name = "front"
-                                select = "concat(substring($def, 1, 50),
-                                                ' ...')"/>
+                                select = "normalize-space(TermDefinition[1]/DefinitionText)"/>
+  <xsl:variable                   name = "front">
+   <!--
+   It's possible a string is made longer than the original if its
+   51, 52, or 53 characters long.
+   -->
+   <xsl:choose>
+    <xsl:when                     test = "string-length($def) > 50">
+     <xsl:value-of              select = "concat(substring($def, 1, 50), ' ...')"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of              select = "$def"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
   <!--
   If we are running this filter through the server (via XMetaL) the
   docId parameter will be passed.  However, if the parameter has not been
