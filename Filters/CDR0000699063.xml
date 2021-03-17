@@ -81,6 +81,7 @@ BZIssue::4990 - New "Quick & Dirty" QC report
   <xsl:copy>
    <xsl:apply-templates          select = "document('cdrutil:/docid')"/>
    <xsl:apply-templates          select = "document('cdrx:/*/CdrCtl')"/>
+
    <xsl:apply-templates/>
   </xsl:copy>
  </xsl:template>
@@ -163,6 +164,16 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
    </xsl:choose>
   </xsl:variable>
 
+  <!--
+  Cancel the report if we can't find the board ID for the English board to
+  retrieve the board information.
+  ==================================================================== -->
+  <xsl:if                         test = "$BoardID = ''">
+   <xsl:message              terminate = "yes">
+    <xsl:text>Error: No board ID available to retrieve board info!</xsl:text>
+   </xsl:message>
+  </xsl:if>
+
   <xsl:variable                   name = "BoardInfo"
                                 select = "document(concat('cdr:',$BoardID,
                                                            '/last'))"/>
@@ -243,7 +254,15 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
    =================================================================== -->
    <xsl:if                        test = "$sumType = 'Treatment'
                                           or
-                                          $sumType = 'Supportive care'">
+                                          $sumType = 'Supportive care'
+                                          or
+                                          $sumType = 'Screening'
+                                          or
+                                          $sumType = 'Prevention'
+                                          or
+                                          $sumType = concat('Integrative,',
+                                                            ' alternative, and ',
+                                                            'complementary therapies')">
    <xsl:variable                  name = "loeNormIDES"
                                 select = "number(
                                            substring-before(
@@ -273,6 +292,19 @@ SELECT doc_id AS "CDRID"
      <xsl:value-of              select = "col[@name='CDRID']"/>
     </xsl:for-each>
    </xsl:variable>
+
+   <!--
+   Cancel the report if we can't find a translation of the LOE Summary
+   for this document type/board.
+
+   Should we be checking this for English Summaries, too? VE, 2021-02-10
+   ==================================================================== -->
+   <xsl:if                        test = "$loeIDES = ''">
+    <xsl:message             terminate = "yes">
+     <xsl:text>Spanish LOE translation missing for this summary type and board!</xsl:text>
+    </xsl:message>
+   </xsl:if>
+
    <xsl:variable                  name = "loeInfoES"
                                 select = "document(concat('cdr:',
                                           format-number($loeIDES,
@@ -528,7 +560,6 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
  </xsl:template>
 
 
-
  <!--
  =================================================================
  Template to denormalize the SummaryRef elements
@@ -626,7 +657,8 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
   <xsl:variable                    name = "MiscID"
                                  select = "@cdr:ref"/>
   <xsl:variable                    name = "MiscInfo"
-                                 select = "document(concat('cdr:',$MiscID,
+                                 select = "document(concat('cdr:',
+                                            cdr:escape-uri($MiscID),
                                                            '/lastp'))"/>
   <xsl:variable                    name = "MiscIDFrag"
                                  select = "substring-after($MiscID, '#')"/>
