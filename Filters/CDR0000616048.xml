@@ -69,7 +69,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
                                                          or
                                                          DefinitionStatus =
                                                            'Revision pending']">
-    <TermDefinition>
+    <xsl:element                  name = "TermDefinition">
      <xsl:apply-templates       select = "DefinitionText">
       <xsl:with-param             name = "language"
                                 select = "'en'"/>
@@ -80,7 +80,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
                                   mode = "copy"/>
      <xsl:apply-templates       select = "Audience"
                                   mode = "copy"/>
-    </TermDefinition>
+    </xsl:element>
    </xsl:for-each>
 
    <!--
@@ -163,6 +163,37 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
                                           GlossaryTermConcept/
                                             TranslatedTermDefinition/
                                             EmbeddedVideo"/>
+
+    <!--
+    We don't want to create the Spanish term name if a valid definition
+    doesn't exist.  Checking first that there will be a definition.
+    =================================================================== -->
+    <xsl:if                       test = "GlossaryTermConcept/
+                                            TranslatedTermDefinition/
+                                            DefinitionText != ''
+                                          and
+                                          (
+                                          GlossaryTermConcept/
+                                            TranslatedTermDefinition/
+                                            TranslatedStatus = 'Approved'
+                                          or
+                                          GlossaryTermConcept/
+                                            TranslatedTermDefinition/
+                                            TranslatedStatus = 'Revision pending')">
+    <xsl:choose>
+     <xsl:when                    test = "TranslatedName">
+      <xsl:apply-templates      select = "TranslatedName"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:element                name = "SpanishTermName">
+       <xsl:value-of            select = "normalize-space(TermName/
+                                                            TermNameString)"/>
+       <xsl:text> (en ingl&#xE9;s)</xsl:text>
+      </xsl:element>
+     </xsl:otherwise>
+    </xsl:choose>
+    </xsl:if>
+
    <!--
    If a translated name exists, process it.  If a translated name does
    not exist, it's because a translation for the word does not exist
@@ -170,53 +201,38 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
    the note "en englais".
    However, we only want to do this if a translated concept definition
    exists for this term.
+
+   Note: A Spanish term may have multiple translations (term names).
+         Only the first (in document order) gets picked up.
    =================================================================== -->
    <!--
    If the TranslatedStatus is not 'Approved' or 'Revision pending'
    don't display the Spanish definition.
    =================================================================== -->
-   <xsl:if                        test = "GlossaryTermConcept/
-                                            TranslatedTermDefinition/
-                                            TranslatedStatus = 'Approved'
-                                          or
-                                          GlossaryTermConcept/
-                                            TranslatedTermDefinition/
-                                            TranslatedStatus = 'Revision pending'">
-    <xsl:choose>
-     <xsl:when                    test = "TranslatedName">
-      <xsl:apply-templates      select = "TranslatedName"/>
-     </xsl:when>
-     <xsl:otherwise>
-      <xsl:if                     test = "GlossaryTermConcept/
-                                           TranslatedTermDefinition">
-       <SpanishTermName>
-        <xsl:value-of           select = "normalize-space(TermName/
-                                                            TermNameString)"/>
-        <xsl:text> (en ingl&#xE9;s)</xsl:text>
-       </SpanishTermName>
-      </xsl:if>
-     </xsl:otherwise>
-    </xsl:choose>
-
+   <xsl:for-each                select = "GlossaryTermConcept/
+                                            TranslatedTermDefinition[TranslatedStatus =
+                                                                        'Approved'
+                                                                     or
+                                                                     TranslatedStatus =
+                                                                     'Revision pending']">
     <!--
     Process the translated definition for the language
     ================================================== -->
-    <xsl:for-each               select = "GlossaryTermConcept/
-                                           TranslatedTermDefinition">
-     <SpanishTermDefinition>
-      <xsl:apply-templates      select = "DefinitionText">
-       <xsl:with-param            name = "language"
+    <xsl:if                       test = "DefinitionText != ''">
+    <xsl:element                  name = "SpanishTermDefinition">
+     <xsl:apply-templates       select = "DefinitionText">
+      <xsl:with-param             name = "language"
                                 select = "'es'"/>
-       <xsl:with-param            name = "audience"
+      <xsl:with-param             name = "audience"
                                 select = "Audience"/>
-      </xsl:apply-templates>
-      <xsl:apply-templates      select = "Dictionary"
+     </xsl:apply-templates>
+     <xsl:apply-templates       select = "Dictionary"
                                   mode = "copy"/>
-      <xsl:apply-templates      select = "Audience"
+     <xsl:apply-templates       select = "Audience"
                                   mode = "copy"/>
-     </SpanishTermDefinition>
-    </xsl:for-each>
-   </xsl:if>
+    </xsl:element>
+    </xsl:if>
+   </xsl:for-each>
 
 
    <!--
@@ -239,9 +255,9 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
    </xsl:variable>
    <xsl:choose>
     <xsl:when                     test = "not($date)">
-     <DateFirstPublished>
+     <xsl:element                 name = "DateFirstPublished">
       <xsl:value-of             select = "$date"/>
-     </DateFirstPublished>
+     </xsl:element>
     </xsl:when>
     <xsl:otherwise>
      <xsl:call-template           name = "getDateFirstPub">
@@ -519,9 +535,9 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
  The TermNameString is displayed as TermName in the vendor output
  ===================================================================== -->
  <xsl:template                   match = "TermName">
-  <TermName>
+  <xsl:element                    name = "{name()}">
    <xsl:value-of                select = "normalize-space(TermNameString)"/>
-  </TermName>
+  </xsl:element>
 
   <xsl:apply-templates          select = "TermPronunciation"/>
  </xsl:template>
@@ -536,9 +552,9 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
    <xsl:when                      test = "@language = 'es'
                                           and
                                           not(@NameType)">
-    <SpanishTermName>
+    <xsl:element                  name = "SpanishTermName">
      <xsl:value-of              select = "normalize-space(TermNameString)"/>
-    </SpanishTermName>
+    </xsl:element>
 
    </xsl:when>
    <xsl:when                      test = "@language = 'es'
@@ -721,38 +737,6 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
      </xsl:when>
     </xsl:choose>
    </xsl:variable>
-
-   <!--
-   We need two different queries depending on the language attribute
-
-   Since we need two individual queries for EN and ES anyway we
-   don't need to use the namePath and statusPath variables
-   ================================================================= -->
-   <!--
-   <xsl:variable                  name = "namePath">
-    <xsl:choose>
-     <xsl:when                    test = "$language = 'en'">
-      <xsl:text>TermName</xsl:text>
-     </xsl:when>
-     <xsl:when                    test = "$language = 'es'">
-      <xsl:text>TranslatedName</xsl:text>
-     </xsl:when>
-    </xsl:choose>
-   </xsl:variable>
-
-   <xsl:variable                  name = "statusPath">
-    <xsl:choose>
-     <xsl:when                    test = "$language = 'en'">
-      <xsl:text>TermNameStatus</xsl:text>
-     </xsl:when>
-     <xsl:when                    test = "$language = 'es'">
-      <xsl:text>TranslatedName/TranslatedNameStatus</xsl:text>
-     </xsl:when>
-    </xsl:choose>
-   </xsl:variable>
-   -->
-
-
 
    <xsl:variable                  name = "queryRows"
                                 select = "document(cdr:escape-uri(
@@ -1087,7 +1071,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
     The SummaryRef url attribute is populated from the xref attribute of
     the SummaryURL element displaying the full path without the domain
     ===================================================================== -->
-  <SummaryRef>
+  <xsl:element                    name = "SummaryRef">
    <xsl:attribute                 name = "href">
     <xsl:value-of               select = "$hrefId"/>
    </xsl:attribute>
@@ -1105,7 +1089,7 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
     </xsl:choose>
    </xsl:attribute>
    <xsl:apply-templates/>
-  </SummaryRef>
+  </xsl:element>
  </xsl:template>
 
 
@@ -1114,11 +1098,11 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
  Template for extracting External Ref Definition
  ============================================================== -->
  <xsl:template                   match = "ExternalRef">
-  <ExternalRef>
+  <xsl:element                    name = "{name()}">
    <xsl:attribute                 name = "xref">
     <xsl:value-of               select = "@cdr:xref"/>
    </xsl:attribute>
    <xsl:apply-templates/>
-  </ExternalRef>
+  </xsl:element>
  </xsl:template>
 </xsl:transform>
