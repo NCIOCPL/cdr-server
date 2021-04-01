@@ -42,6 +42,17 @@ OCECDR-4511 - Remove template which adds nct_id attributes to ProtocolRefs
                                           /SummaryMetaData
                                           /SummaryType"/>
 
+ <!-- Getting the Editorial Board value -->
+ <xsl:variable                    name = "sumBoard">
+  <xsl:for-each                 select = "/Summary
+                                          /SummaryMetaData
+                                          /PDQBoard[not(substring-before(Board,
+                                                            'Advisory Board'))]">
+
+   <xsl:value-of                select = "Board"/>
+  </xsl:for-each>
+ </xsl:variable>
+
   <xsl:variable                   name = "sumId">
    <xsl:value-of                select = "document('cdrutil:/docid')"/>
   </xsl:variable>
@@ -266,7 +277,7 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
                                                                '#'), '#'))"/>
    <xsl:variable                  name = "sqlQueryESLoe">
 SELECT doc_id AS "CDRID"
-  FROM query_term
+  FROM query_term_pub
  WHERE int_val = ?
    AND path = '/Summary/TranslationOf/@cdr:ref'
    </xsl:variable>
@@ -296,7 +307,12 @@ SELECT doc_id AS "CDRID"
    ==================================================================== -->
    <xsl:if                        test = "$loeIDES = ''">
     <xsl:message             terminate = "yes">
-     <xsl:text>Spanish LOE translation missing for this summary type and board!</xsl:text>
+     <xsl:text>Publishable version missing for Spanish LOE translation with </xsl:text>
+     <xsl:text>SummaryType '</xsl:text>
+     <xsl:value-of              select = "$sumType"/>
+     <xsl:text>' and Board '</xsl:text>
+     <xsl:value-of              select = "normalize-space($sumBoard)"/>
+     <xsl:text>'</xsl:text>
     </xsl:message>
    </xsl:if>
 
@@ -518,6 +534,7 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
  <xsl:template                    match = "Diagnosis | Intervention | Drug">
   <xsl:variable                    name = "TermID"
                                  select = "@cdr:ref"/>
+
   <xsl:variable                    name = "TermInfo"
                                  select = "document(concat('cdr:',$TermID,
                                                            '/lastp'))"/>

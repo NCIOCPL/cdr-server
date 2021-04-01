@@ -263,73 +263,92 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
                                           $sumType = concat('Integrative,',
                                                             ' alternative, and ',
                                                             'complementary therapies')">
-   <xsl:variable                  name = "loeNormIDES"
+    <xsl:variable                 name = "loeNormIDES"
                                 select = "number(
                                            substring-before(
                                            concat(
                                            substring-after($loeID, 'CDR'),
                                                                '#'), '#'))"/>
-   <xsl:variable                  name = "sqlQueryESLoe">
+    <xsl:variable                 name = "sqlQueryESLoe">
 SELECT doc_id AS "CDRID"
-  FROM query_term
+  FROM query_term_pub
  WHERE int_val = ?
    AND path = '/Summary/TranslationOf/@cdr:ref'
-   </xsl:variable>
+    </xsl:variable>
 
-   <xsl:variable                  name = "queryRowsLoe"
+    <xsl:variable                 name = "queryRowsLoe"
                                 select = "document(cdr:escape-uri(
                                            concat('cdrutil:/sql-query/',
                                                    $sqlQueryESLoe,
                                                    '~',
                                                    $loeNormIDES)))"/>
 
-   <!-- xsl:value-of select = "$loeNormIDES"/ -->
+    <!-- xsl:value-of select = "$loeNormIDES"/ -->
 
-   <xsl:variable                  name = "loeIDES">
-    <xsl:for-each               select = "$queryRowsLoe
+    <xsl:variable                 name = "loeIDES">
+     <xsl:for-each              select = "$queryRowsLoe
                                              /SqlResult
                                              /row">
-     <xsl:value-of              select = "col[@name='CDRID']"/>
-    </xsl:for-each>
-   </xsl:variable>
+      <xsl:value-of             select = "col[@name='CDRID']"/>
+     </xsl:for-each>
+    </xsl:variable>
 
-   <!--
-   Cancel the report if we can't find a translation of the LOE Summary
-   for this document type/board.
+    <!--
+    Cancel the report if we can't find a translation of the LOE Summary
+    for this document type/board.
 
-   Should we be checking this for English Summaries, too? VE, 2021-02-10
-   ==================================================================== -->
-   <xsl:if                        test = "$loeIDES = ''">
-    <xsl:message             terminate = "yes">
-     <xsl:text>Spanish LOE translation missing for this summary type and board!</xsl:text>
-    </xsl:message>
-   </xsl:if>
+    Should we be checking this for English Summaries, too? VE, 2021-02-10
+    ==================================================================== -->
+    <!--
+    <xsl:if                       test = "$loeIDES = ''">
+     <xsl:message            terminate = "yes">
+      <xsl:text>Publishable version missing for Spanish LOE translation with </xsl:text>
+      <xsl:text>SummaryType '</xsl:text>
+      <xsl:value-of             select = "$sumType"/>
+      <xsl:text>' and Board '</xsl:text>
+      <xsl:value-of             select = "normalize-space($sumBoard)"/>
+      <xsl:text>'</xsl:text>
+     </xsl:message>
+    </xsl:if>
+    -->
 
-   <xsl:variable                  name = "loeInfoES"
+    <xsl:choose>
+     <xsl:when                    test = "not($loeIDES = '')">
+      <xsl:variable               name = "loeInfoES"
                                 select = "document(concat('cdr:',
                                           format-number($loeIDES,
                                                         'CDR0000000000'),
                                                            '/lastp'))"/>
 
-   <xsl:element                   name = "LOESummaryES">
-    <xsl:attribute                name = "cdr:ref">
-     <xsl:value-of              select = "format-number($loeIDES,
+      <xsl:element                name = "LOESummaryES">
+       <xsl:attribute             name = "cdr:ref">
+        <xsl:value-of           select = "format-number($loeIDES,
                                                          'CDR0000000000')"/>
-    </xsl:attribute>
-    <xsl:value-of               select = "$loeInfoES/Summary
+       </xsl:attribute>
+       <xsl:value-of            select = "$loeInfoES/Summary
                                             /SummaryTitle"/>
-   </xsl:element>
+      </xsl:element>
 
-   <xsl:element                   name = "BoardLOEURLES">
-    <xsl:attribute                name = "cdr:xref">
-     <xsl:value-of              select = "$loeInfoES/Summary
+      <xsl:element                name = "BoardLOEURLES">
+       <xsl:attribute             name = "cdr:xref">
+        <xsl:value-of           select = "$loeInfoES/Summary
                                             /SummaryMetaData
                                             /SummaryURL/@cdr:xref"/>
-    </xsl:attribute>
-    <xsl:value-of               select = "$loeInfoES/Summary
+       </xsl:attribute>
+       <xsl:value-of            select = "$loeInfoES/Summary
                                             /SummaryMetaData
                                             /SummaryURL"/>
-   </xsl:element>
+      </xsl:element>
+     </xsl:when>
+     <xsl:otherwise>
+      <LinkError>
+       <xsl:text>*** LOE Denormalization Error: </xsl:text>
+       <xsl:value-of            select = "name()"/>
+       <xsl:text> ***</xsl:text>
+      </LinkError>
+     </xsl:otherwise>
+    </xsl:choose>
+
    </xsl:if>
   </xsl:if>
 
@@ -539,6 +558,7 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
       </xsl:otherwise>
      </xsl:choose>
     </xsl:variable>
+
     <xsl:variable                  name = "TermInfo"
                                  select = "document($uri)"/>
     <xsl:element                   name = "{name()}">
@@ -546,7 +566,8 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
       <xsl:value-of              select = "@cdr:ref"/>
      </xsl:attribute>
 
-     <xsl:value-of               select = "$TermInfo/Term/PreferredName"/>
+     <xsl:value-of               select = "$TermInfo/Term/
+                                            PreferredName"/>
     </xsl:element>
    </xsl:when>
    <xsl:otherwise>
