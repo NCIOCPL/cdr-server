@@ -990,9 +990,13 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
       <xsl:choose>
        <xsl:when                  test = "/GlossaryTermName
                                            /ReplacementText[@name = $ph]">
+        <!--
         <xsl:value-of           select = "normalize-space(
                                            /GlossaryTermName
                                            /ReplacementText[@name = $ph])"/>
+        -->
+        <xsl:apply-templates           select = "/GlossaryTermName
+                                           /ReplacementText[@name = $ph]"/>
        </xsl:when>
        <xsl:otherwise>
         <xsl:value-of           select = "//GlossaryTermConcept
@@ -1012,20 +1016,29 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
 
        </xsl:when>
        <xsl:otherwise>
+        <!--
         <xsl:value-of           select = "normalize-space(
                                            /GlossaryTermName
                                            /ReplacementText[@name = $ph])"/>
+        -->
+        <xsl:apply-templates           select = "/GlossaryTermName
+                                           /ReplacementText[@name = $ph]"/>
        </xsl:otherwise>
       </xsl:choose>
      </xsl:when>
     </xsl:choose>
    </xsl:otherwise>
   </xsl:choose>
-<!--
-      <xsl:value-of             select = "normalize-space(
-                                           //TranslatedTermDefinition/
-                                             ReplacementText[@name = $ph])"/>
--->
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Template to process the marked-up ReplacementText element
+ =================================================================== -->
+ <xsl:template                   match = "ReplacementText">
+  <xsl:apply-templates          select = "*" 
+                                  mode = "copy"/>
  </xsl:template>
 
 
