@@ -23,6 +23,7 @@ OCECDR-4511 - Remove template which adds nct_id attributes to ProtocolRefs
 
  <xsl:include href = "cdr:name:Module: Citation Denormalization"/>
  <xsl:include href = "cdr:name:Module: Multimedia Denormalization"/>
+
  <xsl:variable                     name = "sumLanguage">
   <xsl:choose>
    <xsl:when                       test = "/Summary
@@ -36,11 +37,21 @@ OCECDR-4511 - Remove template which adds nct_id attributes to ProtocolRefs
   </xsl:choose>
  </xsl:variable>
 
-
  <xsl:variable                    name = "sumType"
                                 select = "/Summary
                                           /SummaryMetaData
                                           /SummaryType"/>
+
+ <!-- Getting the Editorial Board value -->
+ <xsl:variable                    name = "sumBoard">
+  <xsl:for-each                 select = "/Summary
+                                          /SummaryMetaData
+                                          /PDQBoard[not(substring-before(Board,
+                                                            'Advisory Board'))]">
+
+   <xsl:value-of                select = "Board"/>
+  </xsl:for-each>
+ </xsl:variable>
 
   <xsl:variable                   name = "sumId">
    <xsl:value-of                select = "document('cdrutil:/docid')"/>
@@ -159,8 +170,6 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
    </xsl:choose>
   </xsl:variable>
 
-
-
   <!--
   Cancel the report if we can't find the board ID for the English board to
   retrieve the board information.
@@ -174,7 +183,6 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
   <xsl:variable                   name = "BoardInfo"
                                 select = "document(concat('cdr:',$BoardID,
                                                            '/last'))"/>
-
    <xsl:choose>
     <xsl:when                     test = "$sumLanguage = 'EN'">
      <xsl:element                 name = "Board">
@@ -269,7 +277,7 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
                                                                '#'), '#'))"/>
    <xsl:variable                  name = "sqlQueryESLoe">
 SELECT doc_id AS "CDRID"
-  FROM query_term
+  FROM query_term_pub
  WHERE int_val = ?
    AND path = '/Summary/TranslationOf/@cdr:ref'
    </xsl:variable>
@@ -282,6 +290,7 @@ SELECT doc_id AS "CDRID"
                                                    $loeNormIDES)))"/>
 
    <!-- xsl:value-of select = "$loeNormIDES"/ -->
+
    <xsl:variable                  name = "loeIDES">
     <xsl:for-each               select = "$queryRowsLoe
                                              /SqlResult
@@ -289,6 +298,24 @@ SELECT doc_id AS "CDRID"
      <xsl:value-of              select = "col[@name='CDRID']"/>
     </xsl:for-each>
    </xsl:variable>
+
+   <!--
+   Cancel the report if we can't find a translation of the LOE Summary
+   for this document type/board.
+
+   Should we be checking this for English Summaries, too? VE, 2021-02-10
+   ==================================================================== -->
+   <xsl:if                        test = "$loeIDES = ''">
+    <xsl:message             terminate = "yes">
+     <xsl:text>Publishable version missing for Spanish LOE translation with </xsl:text>
+     <xsl:text>SummaryType '</xsl:text>
+     <xsl:value-of              select = "$sumType"/>
+     <xsl:text>' and Board '</xsl:text>
+     <xsl:value-of              select = "normalize-space($sumBoard)"/>
+     <xsl:text>'</xsl:text>
+    </xsl:message>
+   </xsl:if>
+
    <xsl:variable                  name = "loeInfoES"
                                 select = "document(concat('cdr:',
                                           format-number($loeIDES,
@@ -507,6 +534,7 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
  <xsl:template                    match = "Diagnosis | Intervention | Drug">
   <xsl:variable                    name = "TermID"
                                  select = "@cdr:ref"/>
+
   <xsl:variable                    name = "TermInfo"
                                  select = "document(concat('cdr:',$TermID,
                                                            '/lastp'))"/>
@@ -520,34 +548,6 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
   </xsl:element>
  </xsl:template>
 
-
-
-
-
- <!--
- =================================================================
- Template to denormalize the summary section intervention terms
- ================================================================= -->
-<!--
- <xsl:template                   match = "Diagnosis    |
-                                          Intervention |
-                                          Drug">
-  <xsl:variable                   name = "termID"
-                                select = "@cdr:ref"/>
-  <xsl:variable                   name = "termDoc"
-                                select = "document(concat('cdr:',$termID,
-                                                           '/last'))"/>
-  <xsl:element                    name = "{name()}">
-    <xsl:for-each               select = "@*">
-     <xsl:attribute               name = "{name()}">
-      <xsl:value-of             select = "."/>
-     </xsl:attribute>
-    </xsl:for-each>
-    <xsl:apply-templates        select = "$termDoc/Term
-                                           /PreferredName"/>
-  </xsl:element>
- </xsl:template>
--->
 
  <!--
  =================================================================
