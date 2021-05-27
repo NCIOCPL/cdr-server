@@ -14,16 +14,21 @@ import glob
 
 FILL = "."
 
+names = []
+longest = 0
 for name in glob.glob("Loader/*.json"):
+    longest = max(longest, len(name))
+    names.append(name)
+for name in sorted(names):
     with open(name) as fp:
         json_string = fp.read().strip()
         try:
             values = json.loads(json_string)
         except Exception:
-            print(f"{name:{FILL}<20} malformed")
+            print(f"{name:{FILL}<{longest+3}} malformed")
             continue
         else:
             if json_string == json.dumps(values, indent=2):
-                print(f"{name:{FILL}<20} ok")
+                print(f"{name:{FILL}<{longest+3}}ok")
             else:
-                print(f"{name:{FILL}<20} hand-edited")
+                print(f"{name:{FILL}<{longest+3}}hand-edited")
