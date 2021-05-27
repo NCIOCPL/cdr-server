@@ -9,14 +9,18 @@ real changes. Run this from the directory in which this script lives
 (the parent directory of the Loader subdirectory).
 """
 
+import argparse
 import json
 import glob
 
 FILL = "."
 
+parser = argparse.ArgumentParser()
+parser.add_argument("--directory", "-d", default="Loader")
+opts = parser.parse_args()
 names = []
 longest = 0
-for name in glob.glob("Loader/*.json"):
+for name in glob.glob(f"{opts.directory}/*.json"):
     longest = max(longest, len(name))
     names.append(name)
 for name in sorted(names):
