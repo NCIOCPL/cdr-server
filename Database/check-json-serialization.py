@@ -25,7 +25,7 @@ for name in sorted(names):
         try:
             values = json.loads(json_string)
         except Exception:
-            print(f"{name:{FILL}<{longest+3}} malformed")
+            print(f"{name:{FILL}<{longest+3}}malformed")
             continue
         else:
             if json_string == json.dumps(values, indent=2):
