@@ -20,8 +20,10 @@ CDECDR-3735: [Media] Audio files ready to be uploaded
                   omit-xml-declaration = "no"/>
 
  <!-- Stylesheet level parameter isQC, passed in from the caller -->
- <!-- Setting default to PP report -->
+ <!-- Setting default to publishing event -->
 
+ <xsl:param                       name = "isPP"
+                                select = "'N'"/>
  <xsl:param                       name = "isQC"
                                 select = "'N'"/>
 
@@ -44,6 +46,11 @@ CDECDR-3735: [Media] Audio files ready to be uploaded
  - path for publishable documents including publishable version of GTC
  - path for QC reports including CWD version
                                                      VE, 2020-02-27
+ 
+ Users decided to go a different route:
+ - QC report ==> using CWD for GTN, CWD for GTC
+ - PP report ==> using CWD for GTN, last for GTC
+ - publish   ==> using lastp for GTN, lastp for GTC
  ===================================================================== -->
  <xsl:template                   match = "GlossaryTermConcept">
   <xsl:variable                   name = "conceptId"
@@ -51,9 +58,22 @@ CDECDR-3735: [Media] Audio files ready to be uploaded
 
   <xsl:variable                   name = "docVersion">
    <xsl:choose>
-    <xsl:when                     test = "$isQC = 'N'">
-     <xsl:text>/lastp</xsl:text>
+    <!-- It's a QC report, using CWD -->
+    <xsl:when                     test = "$isQC = 'Y'">
+     <xsl:text></xsl:text>
     </xsl:when>
+    <xsl:otherwise>
+     <xsl:choose>
+      <!-- It's a PP report, using last version -->
+      <xsl:when                     test = "$isPP = 'Y'">
+       <xsl:text>/last</xsl:text>
+      </xsl:when>
+      <!-- It's a publishing job, using publishable version -->
+      <xsl:otherwise>
+       <xsl:text>/lastp</xsl:text>
+      </xsl:otherwise>
+     </xsl:choose>
+    </xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
 

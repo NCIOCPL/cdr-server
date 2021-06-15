@@ -53,22 +53,29 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
                                                      VE, 2020-01-22
  ================================================================== -->
  <xsl:template                   match = "SummaryModuleLink">
-  <xsl:variable                   name = "moduleRef"
+  <xsl:choose>
+   <xsl:when                      test = "$isQC = 'N'
+                                          and
+                                          @UsedFor = 'qc-only'">
+    <!-- Do nothing - ignore element -->
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:variable                 name = "moduleRef"
                                 select = "@cdr:ref"/>
 
-  <xsl:variable                   name = "docVersion">
-   <xsl:choose>
-    <xsl:when                     test = "$isQC = 'N'">
-     <xsl:text>/lastp</xsl:text>
-    </xsl:when>
-   </xsl:choose>
-  </xsl:variable>
+    <xsl:variable                 name = "docVersion">
+     <xsl:choose>
+      <xsl:when                   test = "$isQC = 'N'">
+       <xsl:text>/lastp</xsl:text>
+      </xsl:when>
+     </xsl:choose>
+    </xsl:variable>
 
-  <xsl:variable                   name = "moduleInfo"
+    <xsl:variable                 name = "moduleInfo"
                                 select = "document(concat('cdr:', $moduleRef,
                                                                   $docVersion))"/>
 
-   <xsl:apply-templates         select = "$moduleInfo/
+    <xsl:apply-templates        select = "$moduleInfo/
                                            Summary/
                                            SummarySection
                                              [not(SectMetaData/
@@ -87,11 +94,13 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
                                                   SectionType =
                                                       'Changes to summary')]]"
                                   mode = "module">
-    <xsl:with-param               name = "ref"
+     <xsl:with-param              name = "ref"
                                 select = "@cdr:ref"/>
-    <xsl:with-param               name = "module"
+     <xsl:with-param              name = "module"
                                 select = "'_sm'"/>
-   </xsl:apply-templates>
+    </xsl:apply-templates>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
