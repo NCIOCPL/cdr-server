@@ -489,3 +489,4 @@ GRANT SELECT ON glossary_translation_job_history TO CdrGuest
 GRANT SELECT ON media_translation_state TO CdrGuest
 GRANT SELECT ON media_translation_job TO CdrGuest
 GRANT SELECT ON media_translation_job_history TO CdrGuest
+GRANT SELECT ON summary_translation_job_attachment TO CdrGuest

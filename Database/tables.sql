@@ -1503,6 +1503,22 @@ CREATE TABLE summary_translation_state
   value_name NVARCHAR(128) NOT NULL UNIQUE,
    value_pos INTEGER NOT NULL)
 GO
+/*
+ * Files to be attached to translation job notificiation messages.
+ *
+ *  attachment_id  primary key, automatically generated
+ *     english_id  foreign key into all_docs table
+ *     file_bytes  binary content for file
+ *      file_name  name of the original file
+ *     registered  when the file was connected with the translation job
+ */
+  CREATE TABLE summary_translation_job_attachment
+(attachment_id INTEGER IDENTITY PRIMARY KEY,
+    english_id INTEGER NOT NULL,
+    file_bytes VARBINARY(MAX) NOT NULL,
+     file_name NVARCHAR(256) NOT NULL,
+    registered DATETIME2)
+GO
 
 /*
  * Audio pronunciation file for a CDR glossary document.
@@ -2385,6 +2401,9 @@ ALTER TABLE summary_translation_job_history ADD FOREIGN KEY(english_id)
 GO
 ALTER TABLE summary_translation_job_history ADD FOREIGN KEY(state_id)
  REFERENCES summary_translation_state
+GO
+ALTER TABLE summary_translation_job_attachment ADD FOREIGN KEY(english_id)
+ REFERENCES all_docs
 GO
 
 ALTER TABLE term_audio_mp3 ADD FOREIGN KEY(cdr_id) REFERENCES all_docs
