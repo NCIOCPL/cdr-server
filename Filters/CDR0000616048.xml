@@ -751,6 +751,10 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
    Also-called is only added if the SQL query returns with a record
    ================================================================ -->
    <xsl:if                        test = "$queryRows/SqlResult/row">
+    <xsl:variable                 name = "lc"
+                                select = "'hi'"/>
+    <xsl:variable                 name = "uc"
+                                select = "'HI'"/>
     <xsl:choose>
      <!--
      A) Only one Also-called exists
@@ -794,15 +798,17 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
         <!-- If the first character of the following word starts with
              an i-sound, the 'y' becomes 'e' in Spanish -->
         <xsl:choose>
-         <xsl:when                test = "substring($queryRows
-                                             /SqlResult
-                                             /row[@id = 2]
-                                             /col[@name='value'], 1, 1) = 'i'
+         <xsl:when                test = "substring(
+                                           translate($queryRows
+                                            /SqlResult
+                                            /row[@id = 2]
+                                            /col[@name='value'], $lc, $uc), 1, 1) = 'I'
                                           or
-                                          substring($queryRows
-                                             /SqlResult
-                                             /row[@id = 2]
-                                             /col[@name='value'], 1, 1) = 'I'">
+                                          substring(
+                                           translate($queryRows
+                                            /SqlResult
+                                            /row[@id = 2]
+                                            /col[@name='value'], $lc, $uc), 1, 2) = 'HI'">
           <xsl:text> e </xsl:text>
          </xsl:when>
          <xsl:otherwise>
@@ -839,24 +845,26 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
         <!--
         Punctuation is different between English and Spanish
         =================================================== -->
-        <xsl:when                  test = "position()+1 = last()">
+        <xsl:when                 test = "position()+1 = last()">
          <xsl:choose>
-          <xsl:when                test = "$language = 'en'">
+          <xsl:when               test = "$language = 'en'">
            <xsl:text>, and </xsl:text>
           </xsl:when>
-          <xsl:when                test = "$language = 'es'">
+          <xsl:when               test = "$language = 'es'">
            <!-- If the first character of the following word starts with
-                an i-sound, the 'y' becomes 'e' in Spanish -->
+                an i-sound, the 'y' is replaced by an 'e' in Spanish -->
            <xsl:choose>
-            <xsl:when                test = "substring($queryRows
-                                                /SqlResult
-                                                /row[@id = last()]
-                                                /col[@name='value'], 1, 1) = 'i'
-                                             or
-                                             substring($queryRows
-                                                /SqlResult
-                                                /row[@id = last()]
-                                                /col[@name='value'], 1, 1) = 'I'">
+            <xsl:when             test = "substring(
+                                           translate($queryRows
+                                            /SqlResult
+                                            /row[@id = 2]
+                                            /col[@name='value'], $lc, $uc), 1, 1) = 'I'
+                                          or
+                                          substring(
+                                           translate($queryRows
+                                            /SqlResult
+                                            /row[@id = 2]
+                                            /col[@name='value'], $lc, $uc), 1, 2) = 'HI'">
              <xsl:text> e </xsl:text>
             </xsl:when>
             <xsl:otherwise>
