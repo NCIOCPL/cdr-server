@@ -79,6 +79,30 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
                                 select = "document(concat('cdr:', $moduleRef,
                                                                   $docVersion))"/>
 
+    <!--
+    =============================================================================
+    The SummaryModuleLink only includes SummarySection elements from the
+    SummaryModule.
+    If the QC report is run with the display of the QC-only modules the users
+    want to include the SummaryTitle as a SectionTitle and display the
+    SummaryModuleLink content as a Sub-SummarySection.
+    We are capturing here all information that needs to be displayed but doesn't
+    belong in the regular denormalization for a SummaryModule.
+    ============================================================================= -->
+    <xsl:if                       test = "@UsedFor">
+    <xsl:element                  name = "ModuleExtra">
+     <xsl:attribute               name = "cdr:ref">
+      <xsl:value-of             select = "@cdr:ref"/>
+     </xsl:attribute>
+     <xsl:copy-of               select = "$moduleInfo/
+                                           Summary/
+                                           SummaryTitle"/>
+     <xsl:copy-of               select = "$moduleInfo/
+                                           Summary/
+                                           DateLastModified"/>
+    </xsl:element>
+    </xsl:if>
+
     <xsl:apply-templates        select = "$moduleInfo/
                                            Summary/
                                            SummarySection
