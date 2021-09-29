@@ -2161,6 +2161,10 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    </xsl:when>
    <xsl:otherwise>
     <xsl:choose>
+     <!-- We need one path for SummarySections with SectionTitle
+          Those will need to add a KeyPoint section.
+          The "Otherwise" path is for SummarySections without KP
+          ====================================================== -->
      <xsl:when                    test = "count($title) = 0">
       <!-- Need to be able to markup a module section if requested
            Wrapping a div around SummarySection identified as module -->
@@ -2177,6 +2181,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
          <xsl:with-param          name = "id"
                                 select = "@cdr:id"/>
         </xsl:call-template>
+       </span>
 
         <!--
         If a QC-only module is being displayed we need to include the SummaryTitle
@@ -2194,7 +2199,6 @@ OCECDR-3956: Allow CitationLinks in Image Captions
           <xsl:apply-templates/>
          </xsl:otherwise>
         </xsl:choose>
-       </span>
       </xsl:element>
      </xsl:when>
      <!--
@@ -2218,7 +2222,23 @@ OCECDR-3956: Allow CitationLinks in Image Captions
         </xsl:attribute>
        </xsl:if>
 
-       <xsl:apply-templates/>
+        <!--
+        If a QC-only module is being displayed we need to include the SummaryTitle
+        of the module as a Section title.  The SummaryTitle is carried over in the
+        previous sibling with the name ModuleExtra
+        ========================================================================== -->
+        <xsl:choose>
+         <xsl:when                test = "//ModuleExtra/@cdr:ref = @cdr:ref">
+          <xsl:element            name = "h2">
+           <xsl:value-of        select = "preceding-sibling::node()[1]/SummaryTitle"/>
+          </xsl:element>
+          <xsl:apply-templates/>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:apply-templates/>
+         </xsl:otherwise>
+        </xsl:choose>
+
       </xsl:element>
      </xsl:otherwise>
     </xsl:choose>
