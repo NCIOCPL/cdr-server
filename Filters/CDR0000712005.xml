@@ -53,29 +53,48 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
                                                      VE, 2020-01-22
  ================================================================== -->
  <xsl:template                   match = "SummaryModuleLink">
-  <xsl:choose>
-   <xsl:when                      test = "$isQC = 'N'
-                                          and
-                                          @UsedFor = 'qc-only'">
-    <!-- Do nothing - ignore element -->
-   </xsl:when>
-   <xsl:otherwise>
-    <xsl:variable                 name = "moduleRef"
-                                select = "@cdr:ref"/>
+  <xsl:variable                   name = "moduleRef"
+                                  select = "@cdr:ref"/>
 
-    <xsl:variable                 name = "docVersion">
-     <xsl:choose>
-      <xsl:when                   test = "$isQC = 'N'">
-       <xsl:text>/lastp</xsl:text>
-      </xsl:when>
-     </xsl:choose>
-    </xsl:variable>
+  <xsl:variable                   name = "docVersion">
+   <xsl:choose>
+    <xsl:when                     test = "$isQC = 'N'">
+     <xsl:text>/lastp</xsl:text>
+    </xsl:when>
+   </xsl:choose>
+  </xsl:variable>
 
-    <xsl:variable                 name = "moduleInfo"
+  <xsl:variable                   name = "moduleInfo"
                                 select = "document(concat('cdr:', $moduleRef,
                                                                   $docVersion))"/>
 
-    <xsl:apply-templates        select = "$moduleInfo/
+  <!--
+  =============================================================================
+  The SummaryModuleLink only includes SummarySection elements from the
+  SummaryModule.
+  If the QC report is run with the display of the QC-only modules the users
+  want to include the SummaryTitle as a SectionTitle and display the
+  SummaryModuleLink content as a Sub-SummarySection.
+  We are capturing here all information that needs to be displayed but doesn't
+  belong in the regular denormalization for a SummaryModule.
+  ============================================================================= -->
+  <xsl:if                         test = "@UsedFor
+                                          and
+                                          $isQC = 'Y'">
+  <xsl:element                    name = "ModuleExtra">
+   <xsl:attribute                 name = "cdr:ref">
+    <xsl:value-of               select = "@cdr:ref"/>
+   </xsl:attribute>
+   <xsl:copy-of                 select = "$moduleInfo/
+                                           Summary/
+                                           SummaryTitle"/>
+   <xsl:copy-of                 select = "$moduleInfo/
+                                           Summary/
+                                           DateLastModified"/>
+  </xsl:element>
+  </xsl:if>
+
+  <xsl:apply-templates          select = "$moduleInfo/
                                            Summary/
                                            SummarySection
                                              [not(SectMetaData/
@@ -94,13 +113,13 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
                                                   SectionType =
                                                       'Changes to summary')]]"
                                   mode = "module">
-     <xsl:with-param              name = "ref"
+   <xsl:with-param                name = "ref"
                                 select = "@cdr:ref"/>
-     <xsl:with-param              name = "module"
+   <xsl:with-param                name = "usedfor"
+                                select = "@UsedFor"/>
+   <xsl:with-param                name = "module"
                                 select = "'_sm'"/>
-    </xsl:apply-templates>
-   </xsl:otherwise>
-  </xsl:choose>
+  </xsl:apply-templates>
  </xsl:template>
 
 
@@ -114,6 +133,7 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
                                   mode = "module">
   <xsl:param                      name = "ref"/>
   <xsl:param                      name = "module"/>
+  <xsl:param                      name = "usedfor"/>
 
     <xsl:variable                 name = "modprefix">
      <xsl:value-of              select = "$module"/>
@@ -129,6 +149,18 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
    <xsl:if                        test = "$module = '_sm'">
     <xsl:attribute                name = "thissection">
      <xsl:value-of              select = "'module'"/>
+    </xsl:attribute>
+   </xsl:if>
+
+   <!--
+   If this section has been imported via a SummaryModuleLink keep
+   track of the "UsedFor=qc-only" attribute
+   ============================================================= -->
+   <xsl:if                        test = "$module = '_sm'
+                                          and
+                                          $usedfor = 'qc-only'">
+    <xsl:attribute                name = "usedfor">
+     <xsl:value-of              select = "$usedfor"/>
     </xsl:attribute>
    </xsl:if>
 
