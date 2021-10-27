@@ -97,11 +97,18 @@ JIRA::OCECDR-4000 - Fix mixed-content problem
      section on Cancer.gov.  The SVPC summaries don't display
      this section by default unless the SVPC is very long.
      ================================================================== -->
-     <xsl:if                      test = "not(/Summary/@SVPC='Yes')
+     <xsl:choose>
+      <xsl:when                   test = "not(/Summary/@SVPC='Yes')
                                           and
-                                          not(/Summary/@ShowTOC='Yes')">
-      <xsl:call-template          name = "displayTOC"/>
-     </xsl:if>
+                                          not(/Summary/@SVPCOnThisPage='Yes')">
+       <xsl:call-template         name = "displayTOC"/>
+      </xsl:when>
+      <xsl:when                   test = "/Summary/@SVPC='Yes'
+                                          and
+                                          /Summary/@SVPCOnThisPage='Yes'">
+       <xsl:call-template         name = "displayTOC"/>
+      </xsl:when>
+     </xsl:choose>
 
      <xsl:apply-templates/>
 
