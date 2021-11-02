@@ -298,7 +298,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  ===========================================================
  Root element
  =========================================================== -->
- <xsl:template                  match = "*" >
+ <xsl:template                   match = "*" >
   <xsl:apply-templates/>
  </xsl:template>
 
@@ -306,54 +306,57 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  ===========================================================
  Document element.
  =========================================================== -->
- <xsl:template                  match = "Summary">
-  <xsl:variable                  name = "iactBoard"
-                               select = "concat(
+ <xsl:template                   match = "Summary">
+  <xsl:variable                   name = "iactBoard"
+                                select = "concat(
                                            'PDQ Integrative, Alternative, ',
                                            'and Complementary Therapies ',
                                            'Editorial Board')"/>
   <!--
   Creating Document Element and adding Doc ID as attribute
   ======================================================== -->
-  <Summary>
-   <xsl:attribute                name = "id">
-    <xsl:value-of              select = "DocId"/>
+  <xsl:element                    name = "Summary">
+   <xsl:attribute                 name = "id">
+    <xsl:value-of               select = "DocId"/>
    </xsl:attribute>
    <!--
    LegacyPDQID should not be displayed for IACT summaries
    ====================================================== -->
-   <xsl:if                       test = "not(SummaryMetaData/PDQBoard/
+   <xsl:if                        test = "not(SummaryMetaData/PDQBoard/
                                                         Board = $iactBoard)">
-    <xsl:attribute               name = "LegacyPDQID">
-     <xsl:value-of             select = "PdqKey"/>
+    <xsl:attribute                name = "LegacyPDQID">
+     <xsl:value-of              select = "PdqKey"/>
     </xsl:attribute>
    </xsl:if>
+
+   <xsl:apply-templates         select = "@*"
+                                  mode = "copy"/>
 
    <!--
    If multiple ReplacementFor elements exist, the CDR Doc IDs will
    need to be displayed space separated.
    =============================================================== -->
-   <xsl:if                       test = "ReplacementFor">
-    <xsl:attribute               name = "ReplacementFor">
-     <xsl:for-each             select = "ReplacementFor">
-      <xsl:value-of            select = "@cdr:ref"/>
-      <xsl:if                    test = "position() != last()">
+   <xsl:if                        test = "ReplacementFor">
+    <xsl:attribute                name = "ReplacementFor">
+     <xsl:for-each              select = "ReplacementFor">
+      <xsl:value-of             select = "@cdr:ref"/>
+      <xsl:if                     test = "position() != last()">
        <xsl:text> </xsl:text>
       </xsl:if>
      </xsl:for-each>
     </xsl:attribute>
    </xsl:if>
 
-   <xsl:apply-templates        select = "SummaryMetaData"/>
-   <xsl:apply-templates        select = "SummaryTitle"/>
-   <xsl:apply-templates        select = "AltTitle"
-                                 mode = "copy"/>
+   <xsl:apply-templates         select = "SummaryMetaData"/>
+   <xsl:apply-templates         select = "SummaryTitle"/>
+   <xsl:apply-templates         select = "AltTitle"
+                                  mode = "copy"/>
 
    <!--
    Display all of the SummarySection elements and attach the
    "More Information" misc documents based on the summary type.
    ============================================================== -->
-   <xsl:apply-templates        select = "SummarySection"/>
+   <xsl:apply-templates         select = "SummarySection"/>
 
    <!--
    =============================================================
@@ -419,7 +422,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
        </xsl:if>
       </xsl:when>
       <xsl:otherwise>
-       <xsl:call-template        name = "ToLearnMore"/>
+       <xsl:call-template         name = "ToLearnMore"/>
       </xsl:otherwise>
      </xsl:choose>
     </xsl:when>
@@ -440,7 +443,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
      This section used to be for HP summaries only but is now being
      added to Patient summaries as well (with a different misc doc).
      ================================================================= -->
-     <xsl:call-template          name = "AboutThisSummary"/>
+     <xsl:call-template           name = "AboutThisSummary"/>
 
     </xsl:otherwise>
    </xsl:choose>
@@ -466,26 +469,26 @@ OCECDR-4123: Add HP/Patient URL to Summaries
    ===================================================================
    Copy Date First Published and Date Last Modified
    =================================================================== -->
-   <xsl:variable                 name = "CtrlBlk"
-                               select = "document('cdr:/*/CdrCtl')"/>
+   <xsl:variable                  name = "CtrlBlk"
+                                select = "document('cdr:/*/CdrCtl')"/>
    <xsl:choose>
-    <xsl:when                    test = "$CtrlBlk/CdrDocCtl/FirstPub/Date">
+    <xsl:when                     test = "$CtrlBlk/CdrDocCtl/FirstPub/Date">
      <DateFirstPublished>
-      <xsl:value-of            select = "substring-before($CtrlBlk/
+      <xsl:value-of             select = "substring-before($CtrlBlk/
                                             CdrDocCtl/FirstPub/Date,'T')"/>
      </DateFirstPublished>
     </xsl:when>
     <xsl:otherwise>
-     <xsl:call-template          name = "getDateFirstPub">
-      <xsl:with-param            name = "date"
-                               select = "$DateFirstPub"/>
+     <xsl:call-template           name = "getDateFirstPub">
+      <xsl:with-param             name = "date"
+                                select = "$DateFirstPub"/>
      </xsl:call-template>
     </xsl:otherwise>
    </xsl:choose>
 
-   <xsl:apply-templates        select = "DateLastModified"
-                               mode   = "copy"/>
-  </Summary>
+   <xsl:apply-templates         select = "DateLastModified"
+                                mode   = "copy"/>
+  </xsl:element>
  </xsl:template>
 
 
