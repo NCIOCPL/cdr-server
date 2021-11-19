@@ -60,6 +60,10 @@ OCECDR-4123: Add HP/Patient URL to Summaries
                                 select = "''"/>
  <xsl:variable                    name = "whoAmI"
                                 select = "'Summary'"/>
+ <xsl:variable                    name = "isSVPCDoc"
+                                select = "/Summary/@SVPC"/>
+ <xsl:variable                    name = "isPartnerDoc"
+                                select = "/Summary/@PartnerMergeSet"/>
 
  <!--
  Variables needed to identify display of certain misc documents based on
@@ -298,7 +302,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  ===========================================================
  Root element
  =========================================================== -->
- <xsl:template                  match = "*" >
+ <xsl:template                   match = "*" >
   <xsl:apply-templates/>
  </xsl:template>
 
@@ -306,54 +310,63 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  ===========================================================
  Document element.
  =========================================================== -->
- <xsl:template                  match = "Summary">
-  <xsl:variable                  name = "iactBoard"
-                               select = "concat(
+ <xsl:template                   match = "Summary">
+  <xsl:variable                   name = "iactBoard"
+                                select = "concat(
                                            'PDQ Integrative, Alternative, ',
                                            'and Complementary Therapies ',
                                            'Editorial Board')"/>
+
   <!--
   Creating Document Element and adding Doc ID as attribute
   ======================================================== -->
-  <Summary>
-   <xsl:attribute                name = "id">
-    <xsl:value-of              select = "DocId"/>
+  <xsl:element                    name = "Summary">
+   <xsl:attribute                 name = "id">
+    <xsl:value-of               select = "DocId"/>
    </xsl:attribute>
    <!--
    LegacyPDQID should not be displayed for IACT summaries
+   This attribute will also be dropped from SVPC and partner docs.
    ====================================================== -->
-   <xsl:if                       test = "not(SummaryMetaData/PDQBoard/
-                                                        Board = $iactBoard)">
-    <xsl:attribute               name = "LegacyPDQID">
-     <xsl:value-of             select = "PdqKey"/>
+   <xsl:if                        test = "not(SummaryMetaData/PDQBoard/
+                                                        Board = $iactBoard)
+                                          and
+                                          not(@SVPC)
+                                          and
+                                          not(@PartnerMergeSet)">
+    <xsl:attribute                name = "LegacyPDQID">
+     <xsl:value-of              select = "PdqKey"/>
     </xsl:attribute>
    </xsl:if>
+
+   <xsl:apply-templates         select = "@*"
+                                  mode = "copy"/>
 
    <!--
    If multiple ReplacementFor elements exist, the CDR Doc IDs will
    need to be displayed space separated.
    =============================================================== -->
-   <xsl:if                       test = "ReplacementFor">
-    <xsl:attribute               name = "ReplacementFor">
-     <xsl:for-each             select = "ReplacementFor">
-      <xsl:value-of            select = "@cdr:ref"/>
-      <xsl:if                    test = "position() != last()">
+   <xsl:if                        test = "ReplacementFor">
+    <xsl:attribute                name = "ReplacementFor">
+     <xsl:for-each              select = "ReplacementFor">
+      <xsl:value-of             select = "@cdr:ref"/>
+      <xsl:if                     test = "position() != last()">
        <xsl:text> </xsl:text>
       </xsl:if>
      </xsl:for-each>
     </xsl:attribute>
    </xsl:if>
 
-   <xsl:apply-templates        select = "SummaryMetaData"/>
-   <xsl:apply-templates        select = "SummaryTitle"/>
-   <xsl:apply-templates        select = "AltTitle"
-                                 mode = "copy"/>
+   <xsl:apply-templates         select = "SummaryMetaData"/>
+   <xsl:apply-templates         select = "SummaryTitle"/>
+   <xsl:apply-templates         select = "AltTitle"
+                                  mode = "copy"/>
 
    <!--
    Display all of the SummarySection elements and attach the
    "More Information" misc documents based on the summary type.
    ============================================================== -->
-   <xsl:apply-templates        select = "SummarySection"/>
+   <xsl:apply-templates         select = "SummarySection"/>
 
    <!--
    =============================================================
@@ -363,10 +376,6 @@ OCECDR-4123: Add HP/Patient URL to Summaries
    SummaryAudience - Patient
    SummaryType     - Treatment, IACT, etc...
    EditorialBoard  - Pediatric, Adult
-
-   The 'To Learn More' section needs to be suppressed from the
-   output for the mobile site.
-   (Note:  As of June 2015 the mobile site doesn't exist anymore)
 
    Bug 5154:  The order of sections at the end of each summary
               should now become (for HP only)
@@ -386,8 +395,16 @@ OCECDR-4123: Add HP/Patient URL to Summaries
      "About this Summary" section is applied to all HP summaries
      This section used to be for HP summaries only but is now being
      added to Patient summaries as well (with a different misc doc).
+
+     Starting in 2022, the summaries are converted to SVPC and neither
+     the SVPC nor the partner output will receive the "About This PDQ
+     Summary" section.
      ================================================================= -->
-     <xsl:call-template           name = "AboutThisSummary"/>
+     <xsl:if                      test = "not($isSVPCDoc)
+                                          and
+                                          not($isPartnerDoc)">
+      <xsl:call-template          name = "AboutThisSummary"/>
+     </xsl:if>
 
      <!--
      The ContactUs template (changed to 'Questions and Comments ...)
@@ -419,7 +436,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
        </xsl:if>
       </xsl:when>
       <xsl:otherwise>
-       <xsl:call-template        name = "ToLearnMore"/>
+       <xsl:call-template         name = "ToLearnMore"/>
       </xsl:otherwise>
      </xsl:choose>
     </xsl:when>
@@ -440,7 +457,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
      This section used to be for HP summaries only but is now being
      added to Patient summaries as well (with a different misc doc).
      ================================================================= -->
-     <xsl:call-template          name = "AboutThisSummary"/>
+     <xsl:call-template           name = "AboutThisSummary"/>
 
     </xsl:otherwise>
    </xsl:choose>
@@ -466,27 +483,35 @@ OCECDR-4123: Add HP/Patient URL to Summaries
    ===================================================================
    Copy Date First Published and Date Last Modified
    =================================================================== -->
-   <xsl:variable                 name = "CtrlBlk"
-                               select = "document('cdr:/*/CdrCtl')"/>
+   <xsl:variable                  name = "CtrlBlk"
+                                select = "document('cdr:/*/CdrCtl')"/>
    <xsl:choose>
-    <xsl:when                    test = "$CtrlBlk/CdrDocCtl/FirstPub/Date">
+    <xsl:when                     test = "$CtrlBlk/CdrDocCtl/FirstPub/Date">
      <DateFirstPublished>
-      <xsl:value-of            select = "substring-before($CtrlBlk/
+      <xsl:value-of             select = "substring-before($CtrlBlk/
                                             CdrDocCtl/FirstPub/Date,'T')"/>
      </DateFirstPublished>
     </xsl:when>
     <xsl:otherwise>
-     <xsl:call-template          name = "getDateFirstPub">
-      <xsl:with-param            name = "date"
-                               select = "$DateFirstPub"/>
+     <xsl:call-template           name = "getDateFirstPub">
+      <xsl:with-param             name = "date"
+                                select = "$DateFirstPub"/>
      </xsl:call-template>
     </xsl:otherwise>
    </xsl:choose>
 
-   <xsl:apply-templates        select = "DateLastModified"
-                               mode   = "copy"/>
-  </Summary>
+   <xsl:apply-templates         select = "DateLastModified"
+                                mode   = "copy"/>
+  </xsl:element>
  </xsl:template>
+
+
+ <!--
+ ===================================================================
+ This attribute is not needed from this point on and can be dropped
+ =================================================================== -->
+ <xsl:template                  match = "@AvailableAsModule"
+                                 mode = "copy"/>
 
 
  <!--
@@ -595,13 +620,13 @@ OCECDR-4123: Add HP/Patient URL to Summaries
   entry.
   ===================================================================== -->
   <SummarySection>
-   <xsl:if                       test = "./@cdr:id">
-    <xsl:attribute               name = "id">
-     <xsl:value-of             select = "./@cdr:id"/>
+   <xsl:if                        test = "./@cdr:id">
+    <xsl:attribute                name = "id">
+     <xsl:value-of              select = "./@cdr:id"/>
     </xsl:attribute>
    </xsl:if>
    <xsl:choose>
-    <xsl:when                    test = "(SectMetaData/
+    <xsl:when                     test = "(SectMetaData/
                                          SectionType = 'Changes to summary'
                                          or
                                          SectMetaData/
@@ -611,29 +636,9 @@ OCECDR-4123: Add HP/Patient URL to Summaries
                                          and
                                          not(@ExcludedDevices)">
 
-     <!-- Mobile isn't treated differently from screen anymore!
-     <xsl:if                     test = "$sumAudience = 'Patients'
-                                         and
-                                         (
-                                          $sumType = 'Treatment'
-                                          or
-                                          $sumType = 'Screening'
-                                          or
-                                          $sumType = 'Prevention'
-                                          or
-                                          $sumType = concat(
-                                            'Integrative, alternative, ',
-                                            'and complementary therapies')
-                                         )">
-      <xsl:attribute             name = "ExcludedDevices">
-       <xsl:text>mobile</xsl:text>
-      </xsl:attribute>
-     </xsl:if>
-     -->
-
     </xsl:when>
     <xsl:otherwise>
-     <xsl:call-template          name = "listDevicesAttribute"/>
+     <xsl:call-template           name = "listDevicesAttribute"/>
     </xsl:otherwise>
    </xsl:choose>
 
@@ -689,9 +694,6 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  ==================================================================
  SummaryURL Template to drop trailing '/'
  ================================================================== -->
- <!--
- <xsl:template                   match = "SummaryURL | MobileURL">
- -->
  <xsl:template                   match = "SummaryURL">
   <xsl:element                    name = "{name()}">
     <xsl:attribute                name = "xref">
@@ -709,7 +711,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  ==================================================================
  MobileURL Template to drop the element - Cancer.gov is responsive
  ================================================================== -->
- <xsl:template                   match = "MobileURL"/>
+ <!-- xsl:template                   match = "MobileURL"/ -->
 
 
  <!--
@@ -808,49 +810,30 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  ==================================================================
  Template to extract the Board Name
  ================================================================== -->
- <xsl:template                  match = "PDQBoard">
-  <xsl:if                        test = "not(contains(Board, 'Advisory'))">
-   <xsl:element                  name = "SummaryEditorialBoard">
-    <xsl:attribute               name = "ref">
-     <xsl:apply-templates      select = "Board/@cdr:ref"/>
+ <xsl:template                   match = "PDQBoard">
+  <xsl:if                         test = "not(contains(Board, 'Advisory'))">
+   <xsl:element                   name = "SummaryEditorialBoard">
+    <xsl:attribute                name = "ref">
+     <xsl:apply-templates       select = "Board/@cdr:ref"/>
     </xsl:attribute>
-    <xsl:apply-templates       select = "Board"/>
+    <xsl:apply-templates        select = "Board"/>
    </xsl:element>
   </xsl:if>
  </xsl:template>
 
 
  <!--
- !!! Why is this template here twice???
- ==================================================================
- Template to extract the Board Name
- ================================================================== -->
- <!--
- <xsl:template                  match = "PDQBoard">
-  <xsl:if                        test = "not(contains(Board, 'Advisory'))">
-  <xsl:element                   name = "SummaryEditorialBoard">
-    <xsl:attribute               name = "ref">
-     <xsl:apply-templates      select = "Board/@cdr:ref"/>
-    </xsl:attribute>
-    <xsl:apply-templates       select = "Board"/>
-  </xsl:element>
-  </xsl:if>
- </xsl:template>
- -->
-
-
- <!--
  ==================================================================
  SectMetaData Template
  ================================================================== -->
- <xsl:template                  match = "SectMetaData">
-  <xsl:if                        test = "Diagnosis
+ <xsl:template                   match = "SectMetaData">
+  <xsl:if                         test = "Diagnosis
                                          or
                                          SectionType">
   <SectMetaData>
-   <xsl:apply-templates        select = "Diagnosis"/>
-   <xsl:apply-templates        select = "SectionType"
-                                 mode = "copy"/>
+   <xsl:apply-templates         select = "Diagnosis"/>
+   <xsl:apply-templates         select = "SectionType"
+                                  mode = "copy"/>
   </SectMetaData>
   </xsl:if>
  </xsl:template>
@@ -860,14 +843,14 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  ==================================================================
  SpecificDiagnosis Template
  ================================================================== -->
- <xsl:template                  match = "Diagnosis">
+ <xsl:template                   match = "Diagnosis">
   <SpecificDiagnosis>
 
-   <xsl:attribute                name = "ref">
-    <xsl:value-of              select = "@cdr:ref"/>
+   <xsl:attribute                 name = "ref">
+    <xsl:value-of               select = "@cdr:ref"/>
    </xsl:attribute>
 
-   <xsl:value-of               select = "."/>
+   <xsl:value-of                select = "."/>
   </SpecificDiagnosis>
  </xsl:template>
 
@@ -876,30 +859,30 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  ==================================================================
  Template to create the Reference Section for each SummarySection
  ================================================================== -->
- <xsl:template                  match = "ReferenceList">
+ <xsl:template                   match = "ReferenceList">
 
   <!--
   Create the Reference Section of the summary section
   =================================================== -->
   <ReferenceSection>
-   <xsl:for-each               select = "Citation">
+   <xsl:for-each                select = "Citation">
     <Citation>
-     <xsl:attribute              name = "idx">
-      <xsl:value-of            select = "./@refidx"/>
+     <xsl:attribute               name = "idx">
+      <xsl:value-of             select = "./@refidx"/>
      </xsl:attribute>
-     <xsl:if                     test = "./@PMID">
-      <xsl:attribute             name = "PMID">
-       <xsl:value-of           select = "./@PMID"/>
+     <xsl:if                      test = "./@PMID">
+      <xsl:attribute              name = "PMID">
+       <xsl:value-of            select = "./@PMID"/>
       </xsl:attribute>
      </xsl:if>
-     <xsl:if                     test = "./@MedlineID">
-      <xsl:attribute             name = "MedlineID">
-       <xsl:value-of           select = "./@MedlineID"/>
+     <xsl:if                      test = "./@MedlineID">
+      <xsl:attribute              name = "MedlineID">
+       <xsl:value-of            select = "./@MedlineID"/>
       </xsl:attribute>
      </xsl:if>
-     <xsl:if                     test = "./@ProtocolID">
-      <xsl:attribute             name = "ProtocolID">
-       <xsl:value-of           select = "./@ProtocolID"/>
+     <xsl:if                      test = "./@ProtocolID">
+      <xsl:attribute              name = "ProtocolID">
+       <xsl:value-of            select = "./@ProtocolID"/>
       </xsl:attribute>
      </xsl:if>
      <xsl:apply-templates/>
@@ -916,23 +899,23 @@ OCECDR-4123: Add HP/Patient URL to Summaries
         not exist in the vendor DTD.  These elements are
         therefore mapped to the SummaryRef/LOERef elements instead.
  =================================================================== -->
- <xsl:template                  match = "SummaryRef | SummaryFragmentRef |
+ <xsl:template                   match = "SummaryRef | SummaryFragmentRef |
                                          LOERef     | LOEFragmentRef">
   <xsl:choose>
-   <xsl:when                     test = "(name() = 'SummaryRef') or
+   <xsl:when                      test = "(name() = 'SummaryRef') or
                                          (name() = 'SummaryFragmentRef')">
-    <xsl:variable                name = "hrefId"
-                               select = "@cdr:href"/>
-    <xsl:variable                name = "hrefNormId">
+    <xsl:variable                 name = "hrefId"
+                                select = "@cdr:href"/>
+    <xsl:variable                 name = "hrefNormId">
      <xsl:choose>
-      <xsl:when                  test = "ancestor::SummarySection/@cdr:ref
+      <xsl:when                   test = "ancestor::SummarySection/@cdr:ref
                                            = substring-before($hrefId, '#')">
-       <xsl:value-of           select = "number(
+       <xsl:value-of            select = "number(
                                            substring-after(/Summary/DocId,
                                                            'CDR'))"/>
       </xsl:when>
       <xsl:otherwise>
-       <xsl:value-of           select = "number(
+       <xsl:value-of            select = "number(
                                            substring-before(
                                            concat(
                                            substring-after(@cdr:href, 'CDR'),
@@ -940,14 +923,6 @@ OCECDR-4123: Add HP/Patient URL to Summaries
       </xsl:otherwise>
      </xsl:choose>
     </xsl:variable>
-
-    <!--
-    <xsl:text>AAA </xsl:text>
-    <xsl:value-of select = "$hrefId"/>
-    <xsl:text> == </xsl:text>
-    <xsl:value-of select = "$hrefNormId"/>
-    <xsl:text> BBB</xsl:text>
-    -->
 
     <!--
     Extracting the content of the SummaryURL attribute to be used for
@@ -1062,9 +1037,9 @@ OCECDR-4123: Add HP/Patient URL to Summaries
       properly create "internal" links once the module has been
       merged with the main document.
       ============================================================== -->
-      <xsl:when                 test = "ancestor::SummarySection/@cdr:ref
-                                        = substring-before(@cdr:href, '#')">
-       <xsl:value-of          select = "concat(/Summary/DocId,
+      <xsl:when                   test = "ancestor::SummarySection/@cdr:ref
+                                          = substring-before(@cdr:href, '#')">
+       <xsl:value-of            select = "concat(/Summary/DocId,
                                                '#_sm_',
                                                translate(@cdr:href, '#', ''))"/>
        <!-- xsl:text>__22</xsl:text -->
@@ -1075,10 +1050,10 @@ OCECDR-4123: Add HP/Patient URL to Summaries
       link from the main to the module.  We need to add the main
       doc's CDR-ID in front just like above.
       ============================================================== -->
-      <xsl:when                 test = "//SummarySection[@thissection='module']
-                                         /@cdr:ref
-                                        = substring-before(@cdr:href, '#')">
-       <xsl:value-of          select = "concat(/Summary/DocId,
+      <xsl:when                   test = "//SummarySection[@thissection='module']
+                                           /@cdr:ref
+                                          = substring-before(@cdr:href, '#')">
+       <xsl:value-of            select = "concat(/Summary/DocId,
                                                '#_sm_',
                                                translate(@cdr:href, '#', ''))"/>
        <!-- xsl:text>__33</xsl:text -->
@@ -1088,7 +1063,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
       we can just copy the value for this regular SummaryRef.
       ============================================================== -->
       <xsl:otherwise>
-       <xsl:value-of          select = "@cdr:href"/>
+       <xsl:value-of            select = "@cdr:href"/>
        <!-- xsl:text>__44</xsl:text -->
       </xsl:otherwise>
      </xsl:choose>
@@ -1112,7 +1087,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  SummaryMetaData Template
  ================================================================== -->
  <xsl:template                   match = "SummaryMetaData">
-  <SummaryMetaData>
+  <xsl:element                    name = "SummaryMetaData">
    <xsl:apply-templates         select = "SummaryType"
                                   mode = "copy"/>
    <xsl:apply-templates         select = "SummaryAudience"
@@ -1122,13 +1097,24 @@ OCECDR-4123: Add HP/Patient URL to Summaries
    <xsl:apply-templates         select = "SummaryDescription"
                                   mode = "copy"/>
    <xsl:apply-templates         select = "SummaryURL"/>
-   <xsl:call-template             name = "SummaryToggleURL"/>
-   <xsl:apply-templates         select = "MobileURL"/>
+   <!--
+   We will not create a toggle if this summary is a SVPC or partner document.
+   ========================================================================= -->
+   <xsl:if                        test = "not($isSVPCDoc)
+                                          and
+                                          not($isPartnerDoc)">
+    <xsl:call-template            name = "SummaryToggleURL"/>
+   </xsl:if>
+
+   <!-- xsl:apply-templates         select = "MobileURL"/ -->
    <xsl:apply-templates         select = "PDQBoard"/>
    <xsl:apply-templates         select = "MainTopics"/>
    <xsl:apply-templates         select = "SecondaryTopics"/>
+   <xsl:apply-templates         select = "SummaryAbstract"/>
+   <!--
    <xsl:apply-templates         select = "SummaryAbstract"
                                   mode = "copy"/>
+   -->
    <xsl:apply-templates         select = "SummaryKeyWords"
                                   mode = "copy"/>
    <!-- xsl:apply-templates        select = "PermaTargs"/ -->
@@ -1142,7 +1128,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
      <xsl:apply-templates       select = "//@PermaTargId"/>
     </xsl:element>
    </xsl:if>
-  </SummaryMetaData>
+  </xsl:element>
  </xsl:template>
 
 
@@ -1158,7 +1144,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
 
    <xsl:if                        test = "not(/Summary/@SVPC = 'Yes')
                                           and
-                                          not(/Summary/@SVPCMerge = 'Yes')">
+                                          not(/Summary/@PartnerMergeSet = 'Yes')">
     <xsl:text> (PDQ&#xAE;)</xsl:text>
    </xsl:if>
 
@@ -1195,10 +1181,11 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  =============================================================
  Template to create MainTopics
  ============================================================= -->
- <xsl:template                   match = "MainTopics">
-  <MainTopics>
+ <xsl:template                   match = "MainTopics |
+                                          SecondaryTopics">
+  <xsl:copy>
    <xsl:apply-templates         select = "Term"/>
-  </MainTopics>
+  </xsl:copy>
  </xsl:template>
 
 
@@ -1206,10 +1193,23 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  =============================================================
  Template to create SecondaryTopics
  ============================================================= -->
+ <!--
  <xsl:template                   match = "SecondaryTopics">
   <SecondaryTopics>
    <xsl:apply-templates         select = "Term"/>
   </SecondaryTopics>
+ </xsl:template>
+ -->
+
+
+ <!--
+ =============================================================
+ Template to create SummaryAbstract
+ ============================================================= -->
+ <xsl:template                   match = "SummaryAbstract">
+  <xsl:copy>
+   <xsl:apply-templates/>
+  </xsl:copy>
  </xsl:template>
 
 
@@ -1218,34 +1218,29 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  Template to move all of the PermaTargs inside the
  SummaryMetaData within a single block.
  ============================================================= -->
- <xsl:template                  match = "@PermaTargId">
-  <xsl:element                   name = "PermaTarg">
-   <xsl:attribute                name = "FragmentId">
-    <xsl:value-of              select = "../@cdr:id"/>
+ <xsl:template                   match = "@PermaTargId">
+  <xsl:element                    name = "PermaTarg">
+   <xsl:attribute                 name = "FragmentId">
+    <xsl:value-of               select = "../@cdr:id"/>
    </xsl:attribute>
-   <xsl:attribute                name = "PermaTargId">
-    <xsl:value-of              select = "../@PermaTargId"/>
+   <xsl:attribute                 name = "PermaTargId">
+    <xsl:value-of               select = "../@PermaTargId"/>
    </xsl:attribute>
-   <xsl:attribute                name = "PermaTargTitle">
+   <xsl:attribute                 name = "PermaTargTitle">
     <xsl:choose>
-     <xsl:when                   test = "../@PermaTargTitle">
-      <xsl:value-of            select = "../@PermaTargTitle"/>
+     <xsl:when                    test = "../@PermaTargTitle">
+      <xsl:value-of             select = "../@PermaTargTitle"/>
      </xsl:when>
      <xsl:otherwise>
-      <xsl:value-of            select = "/Summary
+      <xsl:value-of             select = "/Summary
                                          /SummaryTitle"/>
-      <xsl:if                    test = "../Title">
+      <xsl:if                     test = "../Title">
        <xsl:text>;</xsl:text>
        <xsl:value-of            select = "../Title"/>
       </xsl:if>
      </xsl:otherwise>
     </xsl:choose>
    </xsl:attribute>
-   <!-- PermaTargUrl is for future use
-   <xsl:attribute                name = "PermaTargUrl">
-    <xsl:value-of              select = "../@PermaTargUrl"/>
-   </xsl:attribute>
-   -->
   </xsl:element>
  </xsl:template>
 
@@ -1254,13 +1249,13 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  =============================================================
  Template to create Terms
  ============================================================= -->
- <xsl:template                  match = "Term">
+ <xsl:template                   match = "Term">
    <TermRef>
-    <xsl:attribute               name = "ref">
-     <xsl:value-of             select = "@cdr:ref"/>
+    <xsl:attribute                name = "ref">
+     <xsl:value-of              select = "@cdr:ref"/>
     </xsl:attribute>
 
-    <xsl:value-of              select = "."/>
+    <xsl:value-of               select = "."/>
 
    </TermRef>
  </xsl:template>
@@ -1272,11 +1267,11 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  Create the Para template including the renamed attribute for
  the paragraph IDs. (cdr:ref ID needs to be renamed to id).
  ============================================================= -->
- <xsl:template                  match = "Para">
-  <xsl:if                        test = "normalize-space(.)">
+ <xsl:template                   match = "Para">
+  <xsl:if                         test = "normalize-space(.)">
    <Para>
-    <xsl:attribute               name = "id">
-     <xsl:value-of             select = "./@cdr:id"/>
+    <xsl:attribute                name = "id">
+     <xsl:value-of              select = "./@cdr:id"/>
     </xsl:attribute>
     <xsl:call-template            name = "listDevicesAttribute"/>
     <xsl:apply-templates/>
@@ -1291,11 +1286,11 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  the paragraph IDs.
  Displaying by default the 'To Learn More' misc document.
  ============================================================= -->
- <xsl:template                  match = "Para"
-                                 mode = "MiscText">
-  <xsl:param                     name = "miscDocId"/>
-  <xsl:param                     name = "curLocation"
-                               select = "/.."/>
+ <xsl:template                   match = "Para"
+                                  mode = "MiscText">
+  <xsl:param                      name = "miscDocId"/>
+  <xsl:param                      name = "curLocation"
+                                select = "/.."/>
 
    <!--
    The disclaimer section is different for treatment vs other
@@ -1303,11 +1298,11 @@ OCECDR-4123: Add HP/Patient URL to Summaries
    other paragraph from the misc. document.
    =================================================================== -->
    <xsl:choose>
-    <xsl:when                    test = "contains(./@cdr:id, '_treat')
+    <xsl:when                     test = "contains(./@cdr:id, '_treat')
                                          or
                                          contains(./@cdr:id, '_other')">
      <xsl:choose>
-      <xsl:when                  test = "$sumType = 'Treatment'
+      <xsl:when                   test = "$sumType = 'Treatment'
                                          and
                                          contains(./@cdr:id, '_treat')">
        <Para>
@@ -1315,7 +1310,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
          <xsl:value-of          select = "concat($miscDocId,
                                           substring(./@cdr:id, 7))"/>
         </xsl:attribute>
-        <xsl:call-template            name = "listDevicesAttribute"/>
+        <xsl:call-template        name = "listDevicesAttribute"/>
         <xsl:apply-templates    select = "Para"
                                   mode = "copy"/>
         <xsl:apply-templates>
@@ -1332,7 +1327,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
          <xsl:value-of          select = "concat($miscDocId,
                                           substring(./@cdr:id, 7))"/>
         </xsl:attribute>
-        <xsl:call-template            name = "listDevicesAttribute"/>
+        <xsl:call-template        name = "listDevicesAttribute"/>
         <xsl:apply-templates    select = "Para"
                                   mode = "copy"/>
         <xsl:apply-templates>
@@ -1351,7 +1346,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
       <xsl:attribute              name = "id">
        <xsl:value-of            select = "concat($miscDocId, ./@cdr:id)"/>
       </xsl:attribute>
-      <xsl:call-template            name = "listDevicesAttribute"/>
+      <xsl:call-template          name = "listDevicesAttribute"/>
       <xsl:apply-templates      select = "Para"
                                   mode = "copy"/>
       <xsl:apply-templates>
@@ -2787,64 +2782,6 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  ========================================================================= -->
  <!--
  =========================================================================
- Template to add the "Contact Us" misc. document to the Supportive Care
- summaries.  This gets added to the patient and HP version.
-
- This section (now called 'Contact Us') is now being dropped from all
- supportive care and Screening and Prevention summaries (OCECDR-3982)
- ========================================================================= -->
- <!--
- <xsl:template                   name = "ContactUs">
-  <xsl:if                        test = "SummaryMetaData/
-                                         SummaryType = 'Supportive care'
-                                         or
-                                         SummaryMetaData/
-                                         SummaryType = 'Screening'
-                                         or
-                                         SummaryMetaData/
-                                         SummaryType = 'Prevention'">
-   <xsl:choose>
-    <xsl:when                    test = "SummaryMetaData/
-                                         SummaryLanguage = 'English'">
-
-     <xsl:variable               name = "miscDoc"
-                               select = "document(concat('cdr:CDR0000353162',
-                                                         '/lastp'))"/>
-
-     <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
-                                                  MiscellaneousDocumentText">
-      <xsl:with-param            name = "miscDocId"
-                               select = "'_ContactUs'"/>
-     </xsl:apply-templates>
-    </xsl:when>
- -->
-    <!-- English, Patient, Contact Us Section End-->
-
-    <!-- Spanish, Patient, Contact Us Section -->
- <!--
-    <xsl:otherwise>
-
-     <xsl:variable               name = "miscDoc"
-                               select = "document(concat('cdr:CDR0000353206',
-                                                         '/lastp'))"/>
-     <xsl:apply-templates      select = "$miscDoc/MiscellaneousDocument/
-                                                  MiscellaneousDocumentText">
-      <xsl:with-param            name = "miscDocId"
-                               select = "'_ContactUs'"/>
-     </xsl:apply-templates>
-
-    </xsl:otherwise>
- -->
-   <!-- Spanish To Learn More Section End-->
- <!--
-   </xsl:choose>
-  </xsl:if>
- </xsl:template>
- -->
-
-
- <!--
- =========================================================================
  Template to add the "More Information" misc. document to the summaries.
  Need to add the document in its appropriate language (English/Spanish).
 
@@ -3205,17 +3142,6 @@ OCECDR-4123: Add HP/Patient URL to Summaries
                                                  MiscellaneousDocumentText/
                                                  @cdr:id"/>
      </xsl:attribute>
-     <!--
-     HP summaries will not be published on mobile.  Adding attribute only
-     for patient summaries
-     ==================================================================== -->
-     <!-- Mobile isn't treated differently from screen anymore!
-     <xsl:if                      test = "$sumAudience = 'Patients'">
-      <xsl:attribute              name = "ExcludedDevices">
-       <xsl:text>mobile</xsl:text>
-      </xsl:attribute>
-     </xsl:if>
-     -->
 
      <Title>About This PDQ Summary</Title>
      <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
@@ -3250,18 +3176,6 @@ OCECDR-4123: Add HP/Patient URL to Summaries
                                                  MiscellaneousDocumentText/
                                                  @cdr:id"/>
      </xsl:attribute>
-     <!--
-     HP summaries will not be published on mobile.  Adding attribute only
-     for patient summaries
-     ==================================================================== -->
-     <!-- Mobile isn't treated differently from screen anymore!
-     <xsl:if                      test = "$sumAudience = 'Patients'">
-      <xsl:attribute              name = "ExcludedDevices">
-       <xsl:text>mobile</xsl:text>
-      </xsl:attribute>
-     </xsl:if>
-     -->
-
 
      <Title>Informaci&#xF3;n sobre este sumario del PDQ</Title>
      <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
@@ -3273,42 +3187,6 @@ OCECDR-4123: Add HP/Patient URL to Summaries
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
-
-
- <!--
- =========================================================================
- Template to add the "Get More Information" misc. document to all
- summaries.
- ========================================================================= -->
- <!--  Template is not used anymore !!!
-
- <xsl:template                    name = "GetMoreInfo">
-  <xsl:choose>
-   <xsl:when                      test = "SummaryMetaData/
-                                          SummaryLanguage = 'English'">
-    <xsl:variable                 name = "miscDoc"
-                                select = "document(concat('cdr:CDR000000367',
-                                                         '/lastp'))"/>
-     <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
-                                                  MiscellaneousDocumentText">
-      <xsl:with-param             name = "miscDocId"
-                                select = "'_GetMore'"/>
-     </xsl:apply-templates>
-
-   </xsl:when>
-   <xsl:otherwise>
-    <xsl:variable                 name = "miscDoc"
-                                select = "document(concat('cdr:CDR0000256873',
-                                                         '/lastp'))"/>
-     <xsl:apply-templates       select = "$miscDoc/MiscellaneousDocument/
-                                                  MiscellaneousDocumentText">
-      <xsl:with-param             name = "miscDocId"
-                                select = "'_GetMore'"/>
-     </xsl:apply-templates>
-   </xsl:otherwise>
-  </xsl:choose>
- </xsl:template>
- -->
 
 
  <!--
