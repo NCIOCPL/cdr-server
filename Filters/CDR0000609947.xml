@@ -43,10 +43,10 @@ Filter to create Vendor Person XML documents
          This ensures that the DOCTYPE declaration is displayed on a single
          line followed by the root element on it's own line.
   ========================================================================= -->
-  <xsl:text  disable-output-escaping = "yes">
+  <xsl:text    disable-output-escaping = "yes">
 &lt;!DOCTYPE </xsl:text>
-  <xsl:value-of               select = "name(*)"/>
-  <xsl:text  disable-output-escaping = "yes"> &gt;
+  <xsl:value-of                 select = "name(*)"/>
+  <xsl:text    disable-output-escaping = "yes"> &gt;
 </xsl:text>
   <!--
   End section
@@ -61,8 +61,12 @@ Filter to create Vendor Person XML documents
  <!--
  Remove the '-for HP' text from the SummaryTitle
  The text has been added for Cancer.gov only
- ======================================================= -->
- <xsl:template                   match = "SummaryTitle"
+
+ With the introduction of the SVPC summaries the additional
+ text "-Patient Version" doesn't exist for patient summaries anymore.  This
+ change only needs to be applied to legacy summaries.
+ ========================================================================== -->
+ <xsl:template                   match = "SummaryTitle[not(/Summary/@PartnerMergeSet)]"
                                   mode = "copy">
   <xsl:copy>
    <!-- New Titles, before -->
@@ -252,5 +256,11 @@ Filter to create Vendor Person XML documents
                                           @size            |
                                           @template        |
                                           @thumb"
+                                  mode = "copy"/>
+
+ <!--
+ Remove the @PartnerMergSet attribute used for the SVPC project
+ ===================================================================== -->
+ <xsl:template                   match = "@PartnerMergeSet"
                                   mode = "copy"/>
 </xsl:transform>
