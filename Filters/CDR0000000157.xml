@@ -534,30 +534,12 @@ OCECDR-4123: Add HP/Patient URL to Summaries
      <xsl:value-of             select = "./@cdr:id"/>
     </xsl:attribute>
    </xsl:if>
+
+   <!-- I don't think the template listDevicesAttribute is still in use (VE) -->
    <xsl:choose>
     <xsl:when                    test = "not(@IncludedDevices)
                                          and
                                          not(@ExcludedDevices)">
-
-     <!-- Mobile isn't treated differently from screen anymore!
-     <xsl:if                     test = "$sumAudience = 'Patients'
-                                         and
-                                         (
-                                          $sumType = 'Treatment'
-                                          or
-                                          $sumType = 'Screening'
-                                          or
-                                          $sumType = 'Prevention'
-                                          or
-                                          $sumType = concat(
-                                            'Integrative, alternative, ',
-                                            'and complementary therapies')
-                                         )">
-      <xsl:attribute             name = "ExcludedDevices">
-       <xsl:text>mobile</xsl:text>
-      </xsl:attribute>
-     </xsl:if>
-     -->
 
     </xsl:when>
     <xsl:otherwise>
@@ -575,6 +557,8 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  SummarySection Template
  ================================================================== -->
  <xsl:template                  match = "SummarySection">
+  <xsl:variable                  name = "thisSection"
+                               select = "@cdr:ref"/>
   <!--
   ==================================================================
   Display the TopLevel "TrialSearch" section (for HP Summaries) and
@@ -641,6 +625,89 @@ OCECDR-4123: Add HP/Patient URL to Summaries
      <xsl:call-template           name = "listDevicesAttribute"/>
     </xsl:otherwise>
    </xsl:choose>
+
+   <!-- For a partner document all top-level sections must include a section title.
+        If the section is of type "Introductory Text" it may not include
+        a section title.  Add the document title instead as a section title.
+        Additionally, if a document doesn't contain an "Introductory Text" section
+        but the document contains only a single section without title we want to
+        create a title with the document title, too.
+        In short, if the section title of the first section is missing, then use
+        the document title.  For other missing section titles fail the document.
+
+                                     - - -
+        The ::* means select elements whatever their name, and the [1] means select
+        the first (in axis order) (which is the last in document order).
+                                                                - Michael Kay
+   =============================================================================== -->
+   <xsl:choose>
+    <xsl:when                     test = "(not(Title))
+                                           and
+                                           name(preceding-sibling::*[1])='ModuleExtra'
+                                           and
+                                           $isPartnerDoc">
+     <xsl:element                 name = "Title">
+     <xsl:value-of              select = "preceding-sibling::ModuleExtra[
+                                                                 @cdr:ref=$thisSection]
+                                                                 /SummaryTitle"/>
+     </xsl:element>
+    </xsl:when>
+    <xsl:when                     test = "(not(Title))
+                                           and
+                                           not(name(preceding-sibling::*[1])='ModuleExtra')
+                                           and
+                                           not(parent::SummarySection)
+                                           and
+                                           $isPartnerDoc">
+
+     <xsl:message            terminate = "Yes">
+      <xsl:text>ERROR: Found document with SummarySection </xsl:text>
+      <xsl:text>without Title element (</xsl:text>
+      <xsl:value-of           select = "$thisSection"/>
+      <xsl:text>)</xsl:text>
+     </xsl:message>
+    </xsl:when>
+    <!--
+    Test for SVPC only
+    Ensure that only one SummarySection without title exists.  That could either
+    be the Intro text section or the section of a single section SVPC without Intro.
+    All other top-level sections must contain a Title element.
+    -->
+    <xsl:when                     test = "(not(Title))
+                                           and
+                                           position()>1
+                                           and
+                                           parent::Summary
+                                           and
+                                           $isSVPCDoc">
+
+     <xsl:message            terminate = "Yes">
+      <xsl:text>ERROR: Found SVPC SummarySection </xsl:text>
+      <xsl:text>without Title element (cdr:id='</xsl:text>
+      <xsl:value-of           select = "@cdr:id"/>
+      <xsl:text>')</xsl:text>
+     </xsl:message>
+    </xsl:when>
+    <!--
+    Test for Legacy Summaries only
+    Legacy summaries must have a title for each top-level section
+    -->
+    <xsl:when                     test = "(not(Title))
+                                           and
+                                           parent::Summary
+                                           and
+                                           not($isSVPCDoc)
+                                           and
+                                           not($isPartnerDoc)">
+
+     <xsl:message            terminate = "Yes">
+      <xsl:text>ERROR: Found SummarySection without Title element (cdr:id='</xsl:text>
+      <xsl:value-of           select = "@cdr:id"/>
+      <xsl:text>')</xsl:text>
+     </xsl:message>
+    </xsl:when>
+   </xsl:choose>
+
 
    <!--
    We need to suppress processing of the Reference Section since this
