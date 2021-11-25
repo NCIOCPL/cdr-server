@@ -785,6 +785,11 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  ==================================================================
  Creating a new element to allow Cancer.gov to add a link to toggle
  between the HP and Patient version
+
+ Note: With the introduction of new SVPC documents we're only 
+       creating the toggle between legacy summaries.  If one of the
+       pairs is a partner summary or a SVPC summary we won't create
+       a toggle.
  ================================================================== -->
  <xsl:template                    name = "SummaryToggleURL">
   <xsl:variable                   name = "docNormId"
@@ -813,20 +818,28 @@ OCECDR-4123: Add HP/Patient URL to Summaries
        </xsl:when>
        <!-- Toggle URL for HP version -->
        <xsl:otherwise>
-      SELECT p.doc_id, t.int_val, t.doc_id, u.value
-        FROM query_term_pub p
-        JOIN query_term_pub t
-          ON p.doc_id = t.int_val
-         AND t.path = '/Summary/PatientVersionOf/@cdr:ref'
-        JOIN query_term_pub u
-          ON t.doc_id = u.doc_id
-         AND u.path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
-      -- Only when looking at active documents will we ensure to have a
-      -- one-to-one relationship between HP and Patient version
-        JOIN active_doc a
-          ON a.id = t.doc_id
-       WHERE p.doc_id = ?
-         AND p.path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
+         SELECT p.doc_id, t.int_val, t.doc_id, u.value, sv.value, m.value
+           FROM query_term_pub p
+           JOIN query_term_pub t
+             ON p.doc_id = t.int_val
+            AND t.path = '/Summary/PatientVersionOf/@cdr:ref'
+           JOIN query_term_pub u
+             ON t.doc_id = u.doc_id
+            AND u.path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
+LEFT OUTER JOIN query_term_pub sv
+             ON u.doc_id = sv.doc_id
+		    AND sv.path = '/Summary/@SVPC'
+LEFT OUTER JOIN query_term_pub m
+             ON u.doc_id = m.doc_id
+		    AND m.path = '/Summary/@PartnerMergeSet'
+         -- Only when looking at active documents will we ensure to have a
+         -- one-to-one relationship between HP and Patient version
+           JOIN active_doc a
+             ON a.id = t.doc_id
+          WHERE p.doc_id = ?
+            AND p.path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
+		    AND sv.value IS NULL
+		    AND m.value IS NULL
     </xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
@@ -1164,8 +1177,15 @@ OCECDR-4123: Add HP/Patient URL to Summaries
    <xsl:apply-templates         select = "SummaryDescription"
                                   mode = "copy"/>
    <xsl:apply-templates         select = "SummaryURL"/>
+
    <!--
-   We will not create a toggle if this summary is a SVPC or partner document.
+   We will not create a toggle if this summary is a SVPC or partner document
+   and we will also need to prevent a toggle from the legacy HP version to
+   the new partner or SVPC patient version.
+   Preventing the creation of the toggle from the patient version is done
+   directly. We're checking the attributes.  Preventing the creation of the
+   toggle from an HP version has to be done via a SQL query which is part of
+   the SummaryToggleURL template.
    ========================================================================= -->
    <xsl:if                        test = "not($isSVPCDoc)
                                           and
