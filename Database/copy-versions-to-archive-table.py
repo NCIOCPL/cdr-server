@@ -37,7 +37,7 @@ while batches < opts.max_batches:
     try:
         cursor.execute(insert)
         conn.commit()
-    except:
+    except Exception:
         logger.exception("INSERT failure")
         failures += 1
         if failures > 5:

@@ -9,28 +9,21 @@ import datetime
 import os
 import sys
 
-try:
-    WRITER = sys.stdout.buffer
-except:
-    import msvcrt
-    WRITER = sys.stdout
-    msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
-    msvcrt.setmode(sys.stdin.fileno(), os.O_BINARY)
 
 try:
     from cdr_commands import CommandSet
     responses = CommandSet().get_responses()
-    WRITER.write(b"Content-type: application/xml\r\n\r\n")
-    WRITER.write(responses)
+    sys.stdout.buffer.write(b"Content-type: application/xml\r\n\r\n")
+    sys.stdout.buffer.write(responses)
 except Exception as e:
-    now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
+    now = datetime.datetime.now()
     try:
         for drive in "DCEF":
-            path = drive + ":/cdr/Log"
+            path = f"{drive}:/cdr/Log"
             if os.path.exists(path):
-                with open(path + "/https_api.log", "a") as fp:
-                    fp.write("{} [ERROR] {}\n".format(now, e))
+                with open(f"{path}/https_api.log", "a") as fp:
+                    fp.write(f"{now} [ERROR] {e}\n")
                 break
-    except:
+    except Exception:
         pass
-    WRITER.write(b"Status: 500 CDR unavailable\r\n\r\n")
+    sys.stdout.buffer.write(b"Status: 500 CDR unavailable\r\n\r\n")

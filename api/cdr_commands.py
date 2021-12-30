@@ -141,16 +141,15 @@ class CommandSet:
             elif node.tag == "CdrCommand":
                 try:
                     responses.append(self.__process_command(node))
-                except:
+                except Exception:
                     self.logger.exception("{} failure".format(node.tag))
             else:
                 self.logger.warning("unexpected element %r", node.tag)
         return self.__wrap_responses(*responses)
 
-
-    #------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # HELPER METHODS START HERE.
-    #------------------------------------------------------------------
+    # ------------------------------------------------------------------
 
     def __load_commands(self):
         """
@@ -175,7 +174,7 @@ class CommandSet:
             cursor = conn.cursor()
             cursor.execute(cmd, values)
             conn.commit()
-        except:
+        except Exception:
             self.logger.exception("Failure recording command set")
         root = etree.fromstring(request, parser=self.PARSER)
         if root.tag != "CdrCommandSet":
@@ -281,10 +280,9 @@ class CommandSet:
             return default
         return "".join(node.itertext("*"))
 
-
-    #------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # MAPPED COMMAND METHODS START HERE.
-    #------------------------------------------------------------------
+    # ------------------------------------------------------------------
 
     def _add_action(self, node):
         name = flag = comment = None
@@ -507,7 +505,7 @@ class CommandSet:
                     date = child.get("maxDate")
                     doc = Doc(self.session, id=href, version=ver, before=date)
                 else:
-                    doc = Doc(self.session, xml=self.get_node_text(doc_node))
+                    doc = Doc(self.session, xml=self.get_node_text(child))
             elif child.tag == "Filter":
                 href = child.get("href")
                 name = child.get("Name")
@@ -695,7 +693,6 @@ class CommandSet:
             comment = linktype.comment
             etree.SubElement(response, "LinkTypeComment").text = comment
         sources = linktype.sources or []
-        targets = linktype.targets or []
         properties = linktype.properties or []
         for source in sources:
             wrapper = etree.SubElement(response, "LinkSource")
@@ -973,7 +970,7 @@ class CommandSet:
         opts = dict()
         doc_opts = dict()
         doc_node = None
-        echo = locators = False
+        echo = False
         for child in node.findall("*"):
             if child.tag == "CheckIn":
                 if self.get_node_text(child, "").upper() == "Y":
@@ -991,7 +988,7 @@ class CommandSet:
                     else:
                         opts["val_types"] = "schema", "links"
                     if child.get("ErrorLocators", "").upper() == "Y":
-                        locators = opts["locators"] = True
+                        opts["locators"] = True
             elif child.tag == "SetLinks":
                 if self.get_node_text(child, "").upper() == "Y":
                     opts["set_links"] = True
@@ -1131,7 +1128,7 @@ class CommandSet:
                 if not isinstance(property, LinkType.Property):
                     raise Exception(message.format(name))
                 opts["properties"].append(property)
-            except:
+            except Exception:
                 raise Exception(message.format(name))
         linktype = LinkType(self.session, **opts)
         linktype.save()
@@ -1139,7 +1136,7 @@ class CommandSet:
 
     def _put_user(self, node):
         opts = dict(
-            name = self.get_node_text(node.find("UserName")),
+            name=self.get_node_text(node.find("UserName")),
             fullname=self.get_node_text(node.find("FullName")),
             office=self.get_node_text(node.find("Office")),
             email=self.get_node_text(node.find("Email")),

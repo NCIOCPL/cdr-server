@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Ensure that XML copied to the version archive table matches the source XML.
@@ -15,6 +15,7 @@ from datetime import datetime
 from sys import stderr
 from cdrapi import db
 
+
 def get_xml(cursor, table, version):
     cursor.execute(f"""\
 SELECT xml
@@ -22,6 +23,7 @@ SELECT xml
  WHERE id = ?
    AND num = ?""", version)
     return cursor.fetchone().xml
+
 
 start = datetime.now()
 cursor = db.connect(user="CdrGuest", tier="PROD").cursor()

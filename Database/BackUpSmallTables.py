@@ -1,17 +1,21 @@
-#----------------------------------------------------------------------
-# Creates a safety backup of the most important CDR support tables.
-#----------------------------------------------------------------------
-import os, sys, time
+#!/usr/bin/env python3
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
+# Creates a safety backup of the most important CDR support tables.
+# ---------------------------------------------------------------------
+import os
+import sys
+import time
+
+# ---------------------------------------------------------------------
 # Log the processing for the job.
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 log = open("backup.log", "a")
 log.write("Backup started %s\n" % time.ctime(time.time()))
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # Extract command-line arguments.
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 if len(sys.argv) < 4:
     sys.stderr.write("usage: BackUpSmallTables.py uid pwd archive-name\n")
     log.write("invalid command line: ")
@@ -24,9 +28,9 @@ uid = sys.argv[1]
 pwd = sys.argv[2]
 zip = sys.argv[3]
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # Make sure the archive doesn't already exist.
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 if not zip.lower().endswith(".zip"):
     zip += ".zip"
 if os.path.exists(zip):
@@ -35,53 +39,54 @@ if os.path.exists(zip):
     log.write("================================================\n")
     sys.exit(1)
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # List of tables to be backed up.
-#----------------------------------------------------------------------
-tables = ('action',
-          'active_status',
-          'common',
-          'ctl',
-          'ctl_grp',
-          'dev_task',
-          'dev_task_status',
-          'doc_status',
-          'doc_type',
-          'format',
-          'grp',
-          'grp_action',
-          'grp_usr',
-          'id_category',
-          'issue',
-          'issue_priority',
-          'issue_user',
-          'link_prop_type',
-          'link_properties',
-          'link_target',
-          'link_type',
-          'link_xml',
-          'query_term_def',
-          'query_term_rule',
-          'report_task',
-          'usr'
-         )
+# ---------------------------------------------------------------------
+tables = (
+    'action',
+    'active_status',
+    'common',
+    'ctl',
+    'ctl_grp',
+    'dev_task',
+    'dev_task_status',
+    'doc_status',
+    'doc_type',
+    'format',
+    'grp',
+    'grp_action',
+    'grp_usr',
+    'id_category',
+    'issue',
+    'issue_priority',
+    'issue_user',
+    'link_prop_type',
+    'link_properties',
+    'link_target',
+    'link_type',
+    'link_xml',
+    'query_term_def',
+    'query_term_rule',
+    'report_task',
+    'usr'
+)
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # Put the BCP files in their own directory.
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 try:
     os.mkdir("backup")
-except:
+except Exception:
     pass
 
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 # Back up each table and log the activity.
-#----------------------------------------------------------------------
+# ---------------------------------------------------------------------
 for table in tables:
     print("backing up %s ..." % table)
     try:
         os.unlink("backup/%s.txt" % table)
-    except:
+    except Exception:
         pass
     cmd = "bcp cdr.dbo.%s out backup/%s.txt -U %s -P %s -c" % (table,
                                                                table,
@@ -99,4 +104,4 @@ for table in tables:
         log.write("failure archiving backup/%s.txt\n" % table)
 
 log.write("Backup finished %s\n=========================================\n"
-        % time.ctime(time.time()))
+          % time.ctime(time.time()))
