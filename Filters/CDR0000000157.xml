@@ -264,6 +264,20 @@ OCECDR-4123: Add HP/Patient URL to Summaries
    <xsl:text>_all</xsl:text>
   </xsl:variable>
 
+
+ <!--
+ ===========================================================
+ Defining keys for sorting
+ =========================================================== -->
+ <xsl:key                         name = "maintopics"
+                                 match = "MainTopics/Term"
+                                   use = "./@cdr:ref"/>
+
+ <xsl:key                         name = "keywords"
+                                 match = "SummaryKeyWord"
+                                   use = "concat(name(),'::', .)"/>
+
+
  <!--
  ===========================================================
  Root element
@@ -496,9 +510,6 @@ OCECDR-4123: Add HP/Patient URL to Summaries
                                 select = "$thisSVPC"/>
    </xsl:apply-templates>
 
-   <xsl:apply-templates         select = "DateLastModified"
-                                mode   = "copy"/>
-  </xsl:element>
  </xsl:template>
 
 
@@ -1260,28 +1271,15 @@ LEFT OUTER JOIN query_term_pub m
     <xsl:apply-templates        select = "PDQBoard"/>
    </xsl:if>
 
-   <xsl:apply-templates         select = "MainTopics"/>
+    <xsl:call-template            name = "sortMainTopics"/>
+
    <xsl:apply-templates         select = "SecondaryTopics"/>
    <xsl:apply-templates         select = "SummaryAbstract"/>
-   <!--
-   <xsl:apply-templates         select = "SummaryAbstract"
-                                  mode = "copy"/>
-   -->
-   <xsl:apply-templates         select = "SummaryKeyWords"
-                                  mode = "copy"/>
 
-   <!-- Comment out deep linking:  Needed for a later release -->
-   <!--
-   Move all the PermaTargIds to the SummaryMetaData section
-   ======================================================== -->
-   <!-- PermaTargs were never used except during a trial phase -->
-   <!--
-   <xsl:if                        test = "//@PermaTargId">
-    <xsl:element                  name = "PermaTargs">
-     <xsl:apply-templates       select = "//@PermaTargId"/>
-    </xsl:element>
+   <xsl:if                        test = "//SummaryKeyWords">
+    <xsl:call-template            name = "sortSummaryKeyWords"/>
    </xsl:if>
-   -->
+
   </xsl:element>
  </xsl:template>
 
@@ -1344,6 +1342,40 @@ LEFT OUTER JOIN query_term_pub m
   <xsl:copy>
    <xsl:apply-templates         select = "Term"/>
   </xsl:copy>
+ </xsl:template>
+
+
+ <!--
+ =============================================================
+ Template to create MainTopics and sort them uniquely
+ ============================================================= -->
+ <xsl:template                    name = "sortMainTopics">
+  <xsl:for-each                 select = "//MainTopics/Term[generate-id() =
+                                          generate-id(key('maintopics', @cdr:ref)[1])]">
+   <xsl:sort                    select = "Term"/>
+   <xsl:element                   name = "MainTopics">
+    <xsl:apply-templates        select = "."/>
+   </xsl:element>
+  </xsl:for-each>
+ </xsl:template>
+
+
+ <!--
+ =============================================================
+ Template to create SummaryKeywords sorted uniquely
+ ============================================================= -->
+ <xsl:template                    name = "sortSummaryKeyWords">
+  <xsl:element                    name = "SummaryKeyWords">
+   <xsl:for-each                select = "//SummaryKeyWord[generate-id() =
+                                          generate-id(key('keywords',
+                                                      concat(name(),'::', .))[1])]">
+    <xsl:sort                   select = "translate(., 'abcdefghijklmnopqrstuvwxyz',
+                                                       'ABCDEFGHIJKLMNOPQRSTUVWXYZ')"/>
+
+    <xsl:apply-templates        select = "."
+                                  mode = "copy"/>
+   </xsl:for-each>
+  </xsl:element>
  </xsl:template>
 
 
