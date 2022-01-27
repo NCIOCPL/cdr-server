@@ -115,20 +115,6 @@
       <body>
         <div class="contentzone">
           <article id="_article">
-            <xsl:apply-templates         select = "SummaryMetaData"/>
-            <xsl:apply-templates         select = "SummaryTitle"/>
-
-
-              <!-- create container to insert full document TOC -->
-              <xsl:element                  name = "div">
-                <xsl:attribute               name = "id">
-                  <xsl:text>_toc_article</xsl:text>
-                </xsl:attribute>
-                <!-- Style it -->
-                <xsl:attribute               name = "class">
-                  <xsl:text>pdq-on-this-page</xsl:text>
-                </xsl:attribute>
-              </xsl:element>
 
             <!--
    We have to loop over each top section in order to set the numbering
@@ -183,9 +169,6 @@
           </article>
         </div>
 
-        <xsl:call-template              name = "addTOC"/>
-        <xsl:call-template              name = "SuperSizeMe"/>
-
       </body>
     </html>
   </xsl:template>
@@ -212,24 +195,6 @@
       <xsl:with-param               name = "topSection"
                                   select = "$topSection"/>
     </xsl:apply-templates>
-  </xsl:template>
-
-
-  <!--
-  Template to use jQuery to create Enlarge buttons for Tables and
-  Images
-  =================================================================== -->
-  <xsl:template                  name = "SuperSizeMe">
-    <script type="text/javascript"
-            src="http://cdr.dev.cancer.gov/cgi-bin/cdr/Enlarge.js"></script>
-
-    <script type="text/javascript">
-      <xsl:text>
-       $(function() {
-          $( ".expandable-container" ).supersizeme( { } );
-        });
-      </xsl:text>
-    </script>
   </xsl:template>
 
 
@@ -279,143 +244,11 @@
 
 
   <!--
-  This JavaScript calls the TOC function to attach the TOC to the DIV
-  element with ID="_toc_section_N" N=1,2,3,...
-  =================================================================== -->
-  <xsl:template                  name = "addTOC">
-    <script type="text/javascript"
-            src="http://cdr.dev.cancer.gov/cgi-bin/cdr/STOC_new.js"></script>
-
-    <script id="sectionToc" type="text/javascript">
-      <xsl:text>
-       $(function(){
-      <!-- Full document TOC -->
-          $("#_toc_article").stoc({ search: "article", start: 2, depth: 3,
-          tocTitleEn: "Table of content for this document",
-          tocTitleEs: "Tabla de contenidos para esta (document???)"});
-      </xsl:text>
-
-      <xsl:choose>
-        <xsl:when                    test = "$audience = 'patient'">
-          <xsl:for-each             select = "/Summary/SummarySection">
-            <xsl:variable              name = "thisSection"
-                                     select = "count(
-                                          preceding-sibling::SummarySection) + 1"/>
-            <xsl:choose>
-              <xsl:when                  test = "descendant::KeyPointXXX">
-                <xsl:text>
-          $("#_toc_section</xsl:text>
-                <xsl:value-of          select = "./@id"/>
-                <xsl:text>_</xsl:text>
-                <xsl:value-of          select = "$thisSection"/>
-                <xsl:text>").stoc({search: "#_section</xsl:text>
-                <xsl:value-of          select = "./@id"/>
-                <xsl:text>_</xsl:text>
-                <xsl:value-of          select = "$thisSection"/>
-                <xsl:text>", start: 3</xsl:text>
-                <xsl:text>, depth: 2</xsl:text>
-                <!-- xsl:text>, kp: 1</xsl:text -->
-                <xsl:text>});</xsl:text>
-              </xsl:when>
-              <xsl:otherwise>
-                <xsl:if                     test = "descendant::SummarySection">
-                  <xsl:text>
-         $("#_toc_section</xsl:text>
-                  <xsl:value-of       select = "./@id"/>
-                  <xsl:text>_</xsl:text>
-                  <xsl:value-of select = "$thisSection"/>
-                  <xsl:text>").stoc({search: "#_section</xsl:text>
-                  <xsl:value-of       select = "./@id"/>
-                  <xsl:text>_</xsl:text>
-                  <xsl:value-of select = "$thisSection"/>
-                  <xsl:text>",</xsl:text>
-                  <xsl:text> start: 3,</xsl:text>
-                  <xsl:text> depth: 2,</xsl:text>
-                  <xsl:text> tocTitleEn:"Table of content for this section", </xsl:text>
-                  <xsl:text> tocTitleEs:"Tabla de contenidos para esta secci&#243;n"</xsl:text>
-                  <xsl:text>});</xsl:text>
-                </xsl:if>
-              </xsl:otherwise>
-            </xsl:choose>
-          </xsl:for-each>
-        </xsl:when>
-        <xsl:otherwise>
-      <!--
-      Create TOC for HP sections
-      (but suppress TOC header if no subsections exist)
-      ================================================================= -->
-          <xsl:for-each              select = "/Summary/SummarySection">
-            <xsl:variable               name = "thisSection"
-                                      select = "count(
-                                          preceding-sibling::SummarySection) + 1"/>
-            <xsl:if                     test = "descendant::SummarySection">
-              <xsl:text>
-         $("#_toc_section</xsl:text>
-              <xsl:value-of       select = "./@id"/>
-              <xsl:text>_</xsl:text>
-              <xsl:value-of select = "$thisSection"/>
-              <xsl:text>").stoc({search: "#_section</xsl:text>
-              <xsl:value-of       select = "./@id"/>
-              <xsl:text>_</xsl:text>
-              <xsl:value-of select = "$thisSection"/>
-              <xsl:text>",</xsl:text>
-              <xsl:text> start: 3,</xsl:text>
-              <xsl:text> depth: 2,</xsl:text>
-              <xsl:text> tocTitleEn:"Table of content for this section", </xsl:text>
-              <xsl:text> tocTitleEs:"Tabla de contenidos para esta secci&#243;n"</xsl:text>
-              <xsl:text>});</xsl:text>
-            </xsl:if>
-          </xsl:for-each>
-
-        </xsl:otherwise>
-      </xsl:choose>
-      <xsl:text>
-         });</xsl:text>
-    </script>
-  </xsl:template>
-
-
-  <!--
-  Template to display basic meta data information
-  *** for testing only ***
-  ================================================================ -->
-  <xsl:template                  match = "SummaryMetaData">
-    <div style="background-color: yellow;">
-      <p>
-     <xsl:apply-templates       select = "../@id"/>
-        <xsl:text>;</xsl:text>
-     <xsl:apply-templates       select = "SummaryType"/>
-        <xsl:text>;</xsl:text>
-     <xsl:apply-templates       select = "SummaryAudience"/>
-        <xsl:text>;</xsl:text>
-     <xsl:apply-templates       select = "SummaryLanguage"/>
-        <xsl:text>;pp=</xsl:text>
-     <xsl:value-of              select = "$pp"/>
-      </p>
-    </div>
-  </xsl:template>
-
-
-  <!--
   Template to remove display of SectionMetaData on any level
   ================================================================ -->
   <xsl:template                  match = "SectMetaData">
     <!-- This template is empty -->
   </xsl:template>
-
-  <!--
-  ================================================================ -->
-  <xsl:template                  match = "SummaryTitle">
-    <xsl:element                  name = "h1">
-      <xsl:value-of              select = "substring-before(., '(PDQ')"/>
-      <xsl:text>(PDQ</xsl:text>
-      <xsl:element                 name = "sup">
-        <xsl:text>&#174;</xsl:text>
-      </xsl:element>
-      <xsl:text>)</xsl:text>
-    </xsl:element>
-  </xsl:template>
-
 
   <!--
   Template for Top SummarySections
