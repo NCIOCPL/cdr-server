@@ -424,9 +424,18 @@ OCECDR-4123: Add HP/Patient URL to Summaries
         <xsl:call-template        name = "ToLearnMore"/>
        </xsl:if>
       </xsl:when>
+      <!-- To Learn More doesn't get added to anything but IACT.
+           There is an additional test for IACT in the template. -->
+      <!--
       <xsl:otherwise>
-       <xsl:call-template         name = "ToLearnMore"/>
+       <xsl:if                     test = "not($isSVPCDoc)
+                                           and
+                                           not($isPartnerDoc)">
+        <xsl:call-template        name = "ToLearnMore"/>
+       </xsl:if>
+
       </xsl:otherwise>
+      -->
      </xsl:choose>
     </xsl:when>
     <!-- HP Summaries -->
@@ -668,9 +677,14 @@ OCECDR-4123: Add HP/Patient URL to Summaries
     <!--
     Only if a TrialSearchString='TopLevel' exists are we adding the extra
     Summary section
+    Nothing gets added to SVPC or partner documvents.
     ===================================================================== -->
     <xsl:if                       test = "//SummarySection[@TrialSearchString
-                                           = 'TopLevel']">
+                                           = 'TopLevel']
+                                          and
+                                          not($isSVPCDoc)
+                                          and
+                                          not($isPartnerDoc)">
      <xsl:call-template           name = "addTopLevelTrialSearchSection"/>
 
     </xsl:if>
@@ -799,17 +813,26 @@ OCECDR-4123: Add HP/Patient URL to Summaries
    =================================================================== -->
    <xsl:apply-templates         select = "*[not(self::ReferenceList)]"/>
 
-   <xsl:if                        test = "$sumType = 'Treatment'
+   <!--
+   The new SVPC and partner documents will not receive any of the
+   additional sections/paragraphs that the legacy  documents
+   get. Only legacy summaries will get those extra sections.
+   =================================================================== -->
+   <xsl:if                        test = "not($isSVPCDoc)
+                                          and
+                                          not($isPartnerDoc)">
+    <xsl:if                       test = "$sumType = 'Treatment'
                                           or
                                           $sumType = concat(
                                             'Integrative, alternative, ',
                                             'and complementary therapies')
                                           or
                                           $sumType = 'Supportive care'">
-    <xsl:call-template            name = "addTrialSearchSection">
-     <xsl:with-param              name = "sectionID"
+     <xsl:call-template           name = "addTrialSearchSection">
+      <xsl:with-param             name = "sectionID"
                                 select = "concat('_TrialSearch', ./@cdr:id)"/>
-    </xsl:call-template>
+     </xsl:call-template>
+    </xsl:if>
    </xsl:if>
 
    <!--
@@ -2925,7 +2948,8 @@ LEFT OUTER JOIN query_term_pub m
  =========================================================================
  Named Templates:
  ========================================================================= -->
- <!--
+
+ <!-- Unused - template should be removed ***
  =========================================================================
  Template to add the "More Information" misc. document to the summaries.
  Need to add the document in its appropriate language (English/Spanish).
@@ -2973,7 +2997,7 @@ LEFT OUTER JOIN query_term_pub m
  </xsl:template>
 
 
- <!--
+ <!-- This template is only used for IACT summaries ***
  =========================================================================
  Template to add the "To Learn More" misc. document to the summaries.
  This gets only attached to the patient versions.
@@ -3029,7 +3053,7 @@ LEFT OUTER JOIN query_term_pub m
  </xsl:template>
 
 
- <!--
+ <!-- Unused - template should be removed ***
  =========================================================================
  Template to add the English "About PDQ" misc. document to the summaries.
  This gets only attached to the patient versions.
@@ -3123,7 +3147,7 @@ LEFT OUTER JOIN query_term_pub m
  </xsl:template>
 
 
- <!--
+ <!-- Unused - template should be removed ***
  =========================================================================
  Template to add the Spanish "About PDQ" misc. document to the summaries.
  This gets only attached to the patient versions.
@@ -3259,6 +3283,8 @@ LEFT OUTER JOIN query_term_pub m
  all HP summaries.
  As of Aug. 2013 this section is now also being added to the patient
  summaries.
+ As of Jan 2022 the section is only added to legacy documents. SVPC or
+ partner documents won't include this section.
  ========================================================================= -->
  <xsl:template                   name = "AboutThisSummary">
   <xsl:choose>
@@ -3369,7 +3395,7 @@ LEFT OUTER JOIN query_term_pub m
  </xsl:template>
 
 
- <!--
+ <!-- Unused template - should be removed ***
  =========================================================================
  Template to add the "General Info About ..." misc. document to the
  summaries.
