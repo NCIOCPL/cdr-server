@@ -11,7 +11,7 @@ OCEPROJECT-2877: Post-processing vendor filter change to update Summary
 ==========================================================================
 Filter to create Vendor Person XML documents
 ========================================================================== -->
-  <xsl:transform             xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
                exclude-result-prefixes = "cdr">
@@ -33,9 +33,10 @@ Filter to create Vendor Person XML documents
                                 select = "''"/>
 
 
-<!-- =================================================================
+  <!--
+  =================================================================
                         Copy control information
-     ================================================================= -->
+  ================================================================= -->
   <xsl:template                  match = "/">
 
   <!--
@@ -263,4 +264,105 @@ Filter to create Vendor Person XML documents
  ===================================================================== -->
  <xsl:template                   match = "@PartnerMergeSet"
                                   mode = "copy"/>
+
+
+ <!--
+ Convert the SummaryRef elements to an ExternalRef element and point
+ to cancer.gov if it points to a SVPC document. The SVPC documents are
+ not part of the documents the partner receives, so we'll have to
+ point to the original on CG. If the document doesn't point to
+ a SVPC element keep the SummaryRef as is.
+ ===================================================================== -->
+ <xsl:template                   match = "SummaryRef"
+                                  mode = "copy">
+
+  <xsl:variable                   name = "docNormId">
+   <xsl:choose>
+    <xsl:when                     test = "contains(@href, '#_sm_')">
+     <xsl:value-of              select = "number(substring-before(
+                                            substring-after(@href, '#_sm_CDR'), '_'))"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:value-of              select = "number(
+                                           substring-before(
+                                           concat(
+                                           substring-after(@href, 'CDR'),
+                                                            '#'), '#'))"/>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
+  <xsl:variable                   name = "fragmentId">
+   <xsl:choose>
+    <xsl:when                     test = "contains(@href, '#')">
+     <xsl:value-of              select = "substring-after(@href, '#')"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:text></xsl:text>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:variable>
+
+  <!--
+  Identify if the CDR-ID contained in the module fragment is a SVPC document
+  or regular module
+  ========================================================================== -->
+  <xsl:variable                   name = "sqlQuery">
+         SELECT s.doc_id, s.value AS "SVPC", u.value AS "SVPCURL"
+           FROM query_term_pub s
+           JOIN query_term_pub u
+		     ON u.doc_id = s.doc_id
+		    AND u.path = '/Summary/SummaryMetaData/SummaryURL/@cdr:xref'
+          WHERE s.doc_id = ?
+            AND s.path = '/Summary/@SVPC'
+  </xsl:variable>
+
+  <xsl:variable                   name = "queryRows"
+                                select = "document(cdr:escape-uri(
+                                           concat('cdrutil:/sql-query/',
+                                                   $sqlQuery,
+                                                   '~',
+                                                   $docNormId)))"/>
+  <xsl:variable                   name = "isSVPC"
+                                select = "$queryRows
+                                         /SqlResult
+                                         /row
+                                         /col[@name='SVPC']"/>
+
+  <xsl:variable                   name = "svpcurl"
+                                select = "$queryRows
+                                         /SqlResult
+                                         /row
+                                         /col[@name='SVPCURL']"/>
+
+  <xsl:choose>
+   <xsl:when                      test = "$isSVPC = 'Yes'">
+    <xsl:element                  name = "ExternalRef">
+
+     <xsl:attribute               name = "xref">
+      <xsl:value-of             select = "$svpcurl"/>
+
+      <xsl:choose>
+      <xsl:when                   test = "substring-after(@href, '#_sm_CDR')">
+       <xsl:text>#</xsl:text>
+       <xsl:value-of            select = "concat('_', substring-after(
+                                           substring-after(@href, '#_sm_CDR'), '_'))"/>
+      </xsl:when>
+      <xsl:when                   test = "substring-after(@href, '#')">
+       <xsl:text>#</xsl:text>
+       <xsl:value-of            select = "concat('_', substring-after(
+                                           substring-after(@href, '#'), '_'))"/>
+      </xsl:when>
+      </xsl:choose>
+     </xsl:attribute>
+
+     <xsl:value-of              select = "."/>
+    </xsl:element>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:copy-of                select = "."/>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
 </xsl:transform>
