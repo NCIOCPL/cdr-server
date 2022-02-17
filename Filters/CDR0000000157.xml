@@ -2944,6 +2944,79 @@ LEFT OUTER JOIN query_term_pub m
                                   mode = "copy"/>
 
 
+
+ <!--
+ =====================================================================
+ Template to rename the DrugSummaryRef element to DrugRef and
+ populate the URL attribute value with the linked-to DIS URL
+
+ Note:
+ An identical template exists for DIS documents but it's using the
+ "mode='copy'".  These templates belong in the filter named
+ "Module: Global Filter Templates" but it would require the DIS filter
+ to be adjusted.  In the interest of quick turn-around I'm going the
+ copy/paste route for now. VE
+ ===================================================================== -->
+ <xsl:template                   match = "DrugSummaryRef">
+ <!--
+ <xsl:template                   match = "DrugSummaryRef"
+                                  mode = "copy">
+ -->
+  <xsl:variable                   name = "docNormId"
+                                select = "number(
+                                           substring-after(@cdr:href, 'CDR'))"/>
+
+
+  <!--
+  Extracting the content of the URL element for the linked-to DIS
+  ==================================================================== -->
+  <xsl:variable                   name = "sqlQuery">
+   SELECT doc_id, value
+     FROM query_term_pub
+    WHERE doc_id = ?
+      AND path = '/DrugInformationSummary/DrugInfoMetaData/URL/@cdr:xref'
+  </xsl:variable>
+
+  <xsl:variable                   name = "queryRows"
+                                select = "document(cdr:escape-uri(
+                                          concat('cdrutil:/sql-query/',
+                                                  $sqlQuery,
+                                                  '~',
+                                                  $docNormId)))"/>
+
+  <xsl:variable                   name = "disUrl">
+   <xsl:call-template             name = "getSummaryURL">
+    <xsl:with-param               name = "url"
+                                select = "normalize-space(
+                                            $queryRows
+                                            /SqlResult
+                                            /row
+                                            /col[@name='value'])"/>
+   </xsl:call-template>
+  </xsl:variable>
+
+  <xsl:element                    name = "DrugRef">
+   <xsl:attribute                 name = "href">
+    <xsl:value-of               select = "@cdr:href"/>
+   </xsl:attribute>
+   <xsl:attribute                 name = "url">
+    <xsl:choose>
+     <xsl:when                    test = "starts-with($disUrl, 'http')">
+      <xsl:value-of             select = "substring-after($disUrl, '.gov')"/>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:value-of             select = "$disUrl"/>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:attribute>
+   <xsl:apply-templates/>
+  </xsl:element>
+ </xsl:template>
+
+
+
+
+
  <!--
  =========================================================================
  Named Templates:
