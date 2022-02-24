@@ -365,7 +365,52 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
  Template to create the RelatedExternalRef element
  ===================================================================== -->
  <xsl:template                   match = "RelatedExternalRef">
-  <xsl:copy-of                  select = "."/>
+  <xsl:element                    name = "{name()}">
+
+   <xsl:for-each                select = "@*">
+    <xsl:attribute                name = "{name()}">
+     <xsl:value-of              select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+
+   <xsl:apply-templates/>
+
+   <!-- Adding source based on SourceKey attribute -->
+   <xsl:choose>
+    <xsl:when                     test = "@UseWith = 'en'">
+     <xsl:choose>
+      <xsl:when                   test = "@SourceKey = 'GARD'">
+       <xsl:text> (Genetic and Rare Diseases Information Center)</xsl:text>
+      </xsl:when>
+      <xsl:when                   test = "@SourceKey = 'MedlinePlus'">
+       <xsl:text> (MedlinePlus)</xsl:text>
+      </xsl:when>
+      <xsl:when                   test = "@SourceKey = 'NHGRI'">
+       <xsl:text> (National Human Genome Research Institute)</xsl:text>
+      </xsl:when>
+      <xsl:when                   test = "@SourceKey = 'CDC'">
+       <xsl:text> (Centers for Disease Control and Prevention)</xsl:text>
+      </xsl:when>
+     </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:choose>
+      <xsl:when                   test = "@SourceKey = 'GARD'">
+       <xsl:text> (Centro de Informaci&#x00F3;n sobre Enfermedades Gen&#x00E9;ticas y Raras)</xsl:text>
+      </xsl:when>
+      <xsl:when                   test = "@SourceKey = 'MedlinePlus'">
+       <xsl:text> (MedlinePlus)</xsl:text>
+      </xsl:when>
+      <xsl:when                   test = "@SourceKey = 'NHGRI'">
+       <xsl:text> (Instituto Nacional de Investigaci&#x00F3;n del Genoma Humano)</xsl:text>
+      </xsl:when>
+      <xsl:when                   test = "@SourceKey = 'CDC'">
+       <xsl:text> (Centros para el Control y la Prevenci&#x00F3;n de Enfermedades)</xsl:text>
+      </xsl:when>
+     </xsl:choose>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:element>
  </xsl:template>
 
 
