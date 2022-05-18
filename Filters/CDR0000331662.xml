@@ -14,38 +14,63 @@
                   omit-xml-declaration = "no"
                               encoding = "UTF-8"/>
 
+ <xsl:param                       name = "DisplayQcOnlyMod"
+                                select = "'Y'"/>
+ <xsl:param                       name = "isPP"
+                                select = "'N'"/>
 
  <!-- *
- ==============================================================
+ ================================================================
  Template to denormalize Protocol Published Results section and
  Summary Reference Section
- ============================================================== -->
- <xsl:template                  match = "Citation | CitationLink">
-  <Citation>
-   <xsl:for-each               select = "@*">
-    <xsl:attribute               name = "{name()}">
-     <xsl:value-of             select = "."/>
-    </xsl:attribute>
-   </xsl:for-each>
+ For some summaries users add modules that include citations
+ which shouldn't be displayed or included in the Reference
+ section for PP reports or if the module display has been
+ suppressed. In that case, we're dropping the Citation element
+ here, so it won't get processed as part of the citation filters.
+ ================================================================ -->
+ <xsl:template                   match = "Citation | CitationLink">
+  <xsl:choose>
+   <xsl:when                      test = "ancestor::SummarySection/@usedfor
+                                          and
+                                          $isPP = 'Y'">
+    <!-- Drop TableNumber element for this section -->
+   </xsl:when>
+   <xsl:when                      test = "ancestor::SummarySection/@usedfor
+                                          and
+                                          $DisplayQcOnlyMod = 'N'">
+    <!-- Drop TableNumber element for this section -->
+   </xsl:when>
+   <xsl:otherwise>
 
-    <!--
-    If an empty CitationLink has been entered we still need to create
-    the citInfo variable but don't denormalize (since there is no
-    cdr:ref available to denormalize with).
-    =================================================================== -->
+    <xsl:element                  name = "Citation">
+     <xsl:for-each              select = "@*">
+      <xsl:attribute              name = "{name()}">
+       <xsl:value-of            select = "."/>
+      </xsl:attribute>
+     </xsl:for-each>
 
-   <!--
-   This new attribute is introduced in order to sort by publication
-   year across different citation types
-   ================================================================ -->
-   <xsl:if                       test = "@cdr:ref != ''">
-    <xsl:variable                name = "citInfo"
-                               select = "document(concat('cdr:', @cdr:ref,
+     <!--
+     If an empty CitationLink has been entered we still need to create
+     the citInfo variable but don't denormalize (since there is no
+     cdr:ref available to denormalize with).
+     =================================================================== -->
+
+     <!--
+     This new attribute is introduced in order to sort by publication
+     year across different citation types
+     ================================================================ -->
+     <xsl:if                      test = "@cdr:ref != ''">
+      <xsl:variable               name = "citInfo"
+                                select = "document(concat('cdr:', @cdr:ref,
                                                          '/lastp'))"/>
-    <xsl:apply-templates       select = "$citInfo/Citation/PDQCitation |
-                                         $citInfo/Citation/PubmedArticle"/>
-   </xsl:if>
-  </Citation>
+      <xsl:apply-templates      select = "$citInfo/Citation/PDQCitation |
+                                          $citInfo/Citation/PubmedArticle"/>
+     </xsl:if>
+    </xsl:element>
+
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
