@@ -27,6 +27,9 @@ BZIssue::5065 - [Summaries] 2 More Patient Summary QC Report Display Options
                                 select = "'N'"/>
  <xsl:param                       name = "ShowLearnMoreSection"
                                 select = "'N'"/>
+ <xsl:param                       name = "DisplaySectMetaData"
+                                select = "'N'"/>
+
  <!--
  ======================================================================
  Remove the CdrDocCtl elements from the HTML output
@@ -42,6 +45,7 @@ BZIssue::5065 - [Summaries] 2 More Patient Summary QC Report Display Options
                                           Diagnosis        |
                                           DocId            |
                                           Drug             |
+                                          Intervention     |
                                           MainTopics       |
                                           PatientVersionOf |
                                           PDQBoard         |
@@ -56,6 +60,87 @@ BZIssue::5065 - [Summaries] 2 More Patient Summary QC Report Display Options
                                           AltTitle         |
                                           SummaryType      |
                                           TranslationOf"/>
+
+
+ <!--
+ ================================================================
+ Display the SectMetaData if requested
+ ================================================================ -->
+ <xsl:template                   match = "SectMetaData" >
+  <xsl:if                         test = "$DisplaySectMetaData = 'Y'">
+
+   <xsl:element                   name = "div">
+    <xsl:attribute                name = "class">
+     <xsl:text>sect-meta-data</xsl:text>
+    </xsl:attribute>
+
+    <xsl:element                  name = "div">
+     <xsl:attribute               name = "class">
+      <xsl:text>smd-title</xsl:text>
+     </xsl:attribute>
+     <xsl:text>Section Meta Data</xsl:text>
+    </xsl:element>
+
+     <xsl:if                      test = "Diagnosis">
+      <xsl:element                name = "div">
+       <xsl:attribute             name = "class">
+        <xsl:text>smd-row</xsl:text>
+       </xsl:attribute>
+
+       <xsl:element               name = "label">
+        <xsl:text>Diagnosis: </xsl:text>
+       </xsl:element>
+       <xsl:apply-templates     select = "Diagnosis"
+                                  mode = "smd"/>
+      </xsl:element>
+     </xsl:if>
+
+     <xsl:if                      test = "Intervention">
+      <xsl:element                name = "div">
+       <xsl:attribute             name = "class">
+        <xsl:text>smd-row</xsl:text>
+       </xsl:attribute>
+       <xsl:element               name = "label">
+        <xsl:text>Intervention: </xsl:text>
+       </xsl:element>
+       <xsl:for-each            select = "Intervention">
+        <xsl:value-of           select = "."/>
+        <xsl:if                   test = "position() != last()">
+         <xsl:text>, </xsl:text>
+        </xsl:if>
+       </xsl:for-each>
+      </xsl:element>
+     </xsl:if>
+
+     <xsl:if                      test = "Drug">
+      <xsl:element                name = "div">
+       <xsl:attribute             name = "class">
+        <xsl:text>smd-row</xsl:text>
+       </xsl:attribute>
+       <xsl:element               name = "label">
+        <xsl:text>Drug: </xsl:text>
+       </xsl:element>
+       <xsl:apply-templates     select = "Drug"
+                                  mode = "smd"/>
+      </xsl:element>
+     </xsl:if>
+
+     <xsl:if                      test = "SectionType">
+      <xsl:element                name = "div">
+       <xsl:attribute             name = "class">
+        <xsl:text>smd-row</xsl:text>
+       </xsl:attribute>
+       <xsl:element               name = "label">
+        <xsl:text>Section Type: </xsl:text>
+       </xsl:element>
+       <xsl:apply-templates     select = "SectionType"
+                                  mode = "smd"/>
+      </xsl:element>
+     </xsl:if>
+
+   </xsl:element>
+  </xsl:if>
+ </xsl:template>
 
 
  <!--

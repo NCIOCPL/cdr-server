@@ -151,11 +151,13 @@
   <xsl:apply-templates        select = "*|text()"/>
  </xsl:template>
 
+
  <xsl:template                 match = "DefinitionText"
                                 mode = "html">
   <xsl:apply-templates        select = "*|text()"
                                 mode = "html"/>
  </xsl:template>
+
 
  <!-- Mark up ExternalRef links inside the definition. -->
  <xsl:template                 match = "ExternalRef"
@@ -178,6 +180,42 @@
   <xsl:text>"&gt;</xsl:text>
   <xsl:value-of               select = "text()"/>
   <xsl:text>&lt;/a&gt;</xsl:text>
+ </xsl:template>
+
+
+ <!--
+ Mark up GeneName, ScientificName, and Emphasis inside the definition.
+ ===================================================================== -->
+ <xsl:template                 match = "GeneName |
+                                        ScientificName |
+                                        Emphasis"
+                                mode = "html">
+  <xsl:text>&lt;em</xsl:text>
+   <xsl:choose>
+    <xsl:when                  test = "name() = 'GeneName'">
+      <xsl:text> class="gene-name"</xsl:text>
+    </xsl:when>
+    <xsl:when                  test = "name() = 'ScientificName'">
+      <xsl:text> class="scientific-name"</xsl:text>
+    </xsl:when>
+    <xsl:otherwise>
+     <!-- Nothing added by default -->
+    </xsl:otherwise>
+   </xsl:choose>
+  <xsl:text>&gt;</xsl:text>
+  <xsl:value-of               select = "normalize-space(text())"/>
+  <xsl:text>&lt;/em&gt;</xsl:text>
+ </xsl:template>
+
+
+ <!--
+ Mark up strong inside the definition.
+ ===================================== -->
+ <xsl:template                 match = "Strong"
+                                mode = "html">
+  <xsl:text>&lt;strong&gt;</xsl:text>
+  <xsl:value-of               select = "text()"/>
+  <xsl:text>&lt;/strong&gt;</xsl:text>
  </xsl:template>
 
 

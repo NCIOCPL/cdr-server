@@ -7,24 +7,29 @@
  <xsl:output                    method = "xml"
                   omit-xml-declaration = "no"/>
 
- <!-- 
+ <xsl:param                       name = "DisplayQcOnlyMod"
+                                select = "'Y'"/>
+ <xsl:param                       name = "isPP"
+                                select = "'N'"/>
+
+ <!--
  ====================================================================
  This filter adds the same attribute assigned to the citation link as
  part of the Reference section to the matching citation link in the
  summary section text
  ==================================================================== -->
 
- <!-- 
+ <!--
  ====================================================================
  Copy the refidx attribute from the Citations in the Reference section
- to the Citation elements within the text.  These citations are linked 
+ to the Citation elements within the text.  These citations are linked
  via their CDR-ID (@cdr:ref).
  If there are empty Citation elements, we're displaying the refidx
  number of the very first empty citation element.  If there are more
  than one empty Citations they all receive the refidx of the first
  empty citation.
- According to Victoria Shields it would be very rare for multiple 
- empty citation links to exist within a single section and if this 
+ According to Victoria Shields it would be very rare for multiple
+ empty citation links to exist within a single section and if this
  situation does come up the empty citations are properly sorted within
  the reference section.
  ==================================================================== -->
@@ -62,7 +67,7 @@
 
     </xsl:copy>
    </xsl:when>
-   <!-- 
+   <!--
    We want to copy all attributes.  We need at least the refidx value
    in order to create the anker links for the citations from within the
    text
@@ -77,7 +82,38 @@
  </xsl:template>
 
 
- <!-- 
+ <!--
+ ================================================================
+ Template rule used to set table numbers
+ The CDR document contains the TableNumber element to allow
+ numbering tables properly if they contain modules with tables.
+ Recently, users requested to suppress modules from QC reports
+ which requires to only include the TableNumber element for
+ sections that are shown and suppress table numbers that are
+ suppressed.
+ Here we drop the TableNumber element if the QC report doesn't
+ show the module or if we're running a PP report.
+ ================================================================ -->
+ <xsl:template                   match = "TableNumber">
+  <xsl:choose>
+   <xsl:when                      test = "ancestor::SummarySection/@usedfor
+                                          and
+                                          $isPP = 'Y'">
+    <!-- Drop TableNumber element for this section -->
+   </xsl:when>
+   <xsl:when                      test = "ancestor::SummarySection/@usedfor
+                                          and
+                                          $DisplayQcOnlyMod = 'N'">
+    <!-- Drop TableNumber element for this section -->
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:copy/>
+   </xsl:otherwise>
+   </xsl:choose>
+ </xsl:template>
+
+
+ <!--
  ================================================================
  Template rule used to do XML to XML transformations which
  copies any attribute node, or node that is child of of something

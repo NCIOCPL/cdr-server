@@ -365,7 +365,52 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
  Template to create the RelatedExternalRef element
  ===================================================================== -->
  <xsl:template                   match = "RelatedExternalRef">
-  <xsl:copy-of                  select = "."/>
+  <xsl:element                    name = "{name()}">
+
+   <xsl:for-each                select = "@*">
+    <xsl:attribute                name = "{name()}">
+     <xsl:value-of              select = "."/>
+    </xsl:attribute>
+   </xsl:for-each>
+
+   <xsl:apply-templates/>
+
+   <!-- Adding source based on SourceKey attribute -->
+   <xsl:choose>
+    <xsl:when                     test = "@UseWith = 'en'">
+     <xsl:choose>
+      <xsl:when                   test = "@SourceKey = 'GARD'">
+       <xsl:text> (Genetic and Rare Diseases Information Center)</xsl:text>
+      </xsl:when>
+      <xsl:when                   test = "@SourceKey = 'MedlinePlus'">
+       <xsl:text> (MedlinePlus)</xsl:text>
+      </xsl:when>
+      <xsl:when                   test = "@SourceKey = 'NHGRI'">
+       <xsl:text> (National Human Genome Research Institute)</xsl:text>
+      </xsl:when>
+      <xsl:when                   test = "@SourceKey = 'CDC'">
+       <xsl:text> (Centers for Disease Control and Prevention)</xsl:text>
+      </xsl:when>
+     </xsl:choose>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:choose>
+      <xsl:when                   test = "@SourceKey = 'GARD'">
+       <xsl:text> (Centro de Informaci&#x00F3;n sobre Enfermedades Gen&#x00E9;ticas y Raras)</xsl:text>
+      </xsl:when>
+      <xsl:when                   test = "@SourceKey = 'MedlinePlus'">
+       <xsl:text> (MedlinePlus)</xsl:text>
+      </xsl:when>
+      <xsl:when                   test = "@SourceKey = 'NHGRI'">
+       <xsl:text> (Instituto Nacional de Investigaci&#x00F3;n del Genoma Humano)</xsl:text>
+      </xsl:when>
+      <xsl:when                   test = "@SourceKey = 'CDC'">
+       <xsl:text> (Centros para el Control y la Prevenci&#x00F3;n de Enfermedades)</xsl:text>
+      </xsl:when>
+     </xsl:choose>
+    </xsl:otherwise>
+   </xsl:choose>
+  </xsl:element>
  </xsl:template>
 
 
@@ -517,13 +562,14 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
                                             TermNameString"/>
    </xsl:when>
    <xsl:otherwise>
+    <!-- Excluding all names marked as NameType="alternate" -->
     <xsl:apply-templates        select = "/GlossaryTermName/
                                             GlossaryTermConcept/
                                             RelatedInformation/
                                             RelatedGlossaryTermNameLink
                                               [@cdr:ref = $relRef]/
                                             GlossaryTermName/
-                                            TranslatedName/
+                                            TranslatedName[not(@NameType)]/
                                             TermNameString"/>
    </xsl:otherwise>
   </xsl:choose>
@@ -751,6 +797,10 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
    Also-called is only added if the SQL query returns with a record
    ================================================================ -->
    <xsl:if                        test = "$queryRows/SqlResult/row">
+    <xsl:variable                 name = "lc"
+                                select = "'hi'"/>
+    <xsl:variable                 name = "uc"
+                                select = "'HI'"/>
     <xsl:choose>
      <!--
      A) Only one Also-called exists
@@ -794,15 +844,17 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
         <!-- If the first character of the following word starts with
              an i-sound, the 'y' becomes 'e' in Spanish -->
         <xsl:choose>
-         <xsl:when                test = "substring($queryRows
-                                             /SqlResult
-                                             /row[@id = 2]
-                                             /col[@name='value'], 1, 1) = 'i'
+         <xsl:when                test = "substring(
+                                           translate($queryRows
+                                            /SqlResult
+                                            /row[@id = 2]
+                                            /col[@name='value'], $lc, $uc), 1, 1) = 'I'
                                           or
-                                          substring($queryRows
-                                             /SqlResult
-                                             /row[@id = 2]
-                                             /col[@name='value'], 1, 1) = 'I'">
+                                          substring(
+                                           translate($queryRows
+                                            /SqlResult
+                                            /row[@id = 2]
+                                            /col[@name='value'], $lc, $uc), 1, 2) = 'HI'">
           <xsl:text> e </xsl:text>
          </xsl:when>
          <xsl:otherwise>
@@ -839,24 +891,26 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
         <!--
         Punctuation is different between English and Spanish
         =================================================== -->
-        <xsl:when                  test = "position()+1 = last()">
+        <xsl:when                 test = "position()+1 = last()">
          <xsl:choose>
-          <xsl:when                test = "$language = 'en'">
+          <xsl:when               test = "$language = 'en'">
            <xsl:text>, and </xsl:text>
           </xsl:when>
-          <xsl:when                test = "$language = 'es'">
+          <xsl:when               test = "$language = 'es'">
            <!-- If the first character of the following word starts with
-                an i-sound, the 'y' becomes 'e' in Spanish -->
+                an i-sound, the 'y' is replaced by an 'e' in Spanish -->
            <xsl:choose>
-            <xsl:when                test = "substring($queryRows
-                                                /SqlResult
-                                                /row[@id = last()]
-                                                /col[@name='value'], 1, 1) = 'i'
-                                             or
-                                             substring($queryRows
-                                                /SqlResult
-                                                /row[@id = last()]
-                                                /col[@name='value'], 1, 1) = 'I'">
+            <xsl:when             test = "substring(
+                                           translate($queryRows
+                                            /SqlResult
+                                            /row[@id = last()]
+                                            /col[@name='value'], $lc, $uc), 1, 1) = 'I'
+                                          or
+                                          substring(
+                                           translate($queryRows
+                                            /SqlResult
+                                            /row[@id = last()]
+                                            /col[@name='value'], $lc, $uc), 1, 2) = 'HI'">
              <xsl:text> e </xsl:text>
             </xsl:when>
             <xsl:otherwise>
@@ -974,9 +1028,8 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
       <xsl:choose>
        <xsl:when                  test = "/GlossaryTermName
                                            /ReplacementText[@name = $ph]">
-        <xsl:value-of           select = "normalize-space(
-                                           /GlossaryTermName
-                                           /ReplacementText[@name = $ph])"/>
+        <xsl:apply-templates    select = "/GlossaryTermName
+                                           /ReplacementText[@name = $ph]"/>
        </xsl:when>
        <xsl:otherwise>
         <xsl:value-of           select = "//GlossaryTermConcept
@@ -985,6 +1038,9 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
        </xsl:otherwise>
       </xsl:choose>
      </xsl:when>
+
+
+
      <xsl:when                    test = "$language = 'es'">
       <xsl:choose>
        <xsl:when                  test = "//GlossaryTermConcept
@@ -996,20 +1052,25 @@ OCECDR-3966: Add URL Attribute for Gatekeeper Processing
 
        </xsl:when>
        <xsl:otherwise>
-        <xsl:value-of           select = "normalize-space(
-                                           /GlossaryTermName
-                                           /ReplacementText[@name = $ph])"/>
+        <xsl:apply-templates    select = "/GlossaryTermName
+                                           /ReplacementText[@name = $ph]"/>
        </xsl:otherwise>
       </xsl:choose>
      </xsl:when>
     </xsl:choose>
    </xsl:otherwise>
   </xsl:choose>
-<!--
-      <xsl:value-of             select = "normalize-space(
-                                           //TranslatedTermDefinition/
-                                             ReplacementText[@name = $ph])"/>
--->
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Template to process the ReplacementText element which can contain
+ markup
+ =================================================================== -->
+ <xsl:template                   match = "ReplacementText">
+  <xsl:apply-templates          select = "*|text()"
+                                  mode = "copy"/>
  </xsl:template>
 
 

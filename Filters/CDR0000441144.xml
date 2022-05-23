@@ -85,26 +85,33 @@ JIRA::OCECDR-4000 - Fix mixed-content problem
                                   mode = "TOC"/>
 
      <!--
-     ======================================================
+     ===========================================================
      Display summary type and audience
-     ======================================================-->
+     ===========================================================-->
      <xsl:call-template           name = "displayMetaData"/>
 
      <!--
      ==================================================================
-     Display summary type and audience
+     Display the table of content (TOC)
+
+     The TOC on the QC report is presented as an "On This Page"
+     section on Cancer.gov.  All summaries, including SVPC, display
+     this section by default. The @SuppressOnThisPageSection attribute
+     will turn it off.
      ================================================================== -->
-     <xsl:call-template           name = "displayTOC"/>
+     <xsl:if                      test = "not(/Summary/@SuppressOnThisPageSection='Yes')">
+      <xsl:call-template          name = "displayTOC"/>
+     </xsl:if>
 
      <xsl:apply-templates/>
 
     </BODY>
    </xsl:when>
    <xsl:otherwise>
-    <BODY>
+    <xsl:element                  name = "body">
      <h2>ERROR:</h2>
      <h3>Patient Bold/Underline QC Report not valid for HP summaries</h3>
-    </BODY>
+    </xsl:element>
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>

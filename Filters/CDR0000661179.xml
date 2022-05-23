@@ -1,6 +1,10 @@
 <?xml version="1.0" ?>
-<!-- CDR0000661179.xml -->
 <!-- Filter title: Licensee QC Report Filter -->
+<!--
+ ================================================================
+ Filter to create a PDQ Partner (a.k.a. Licensee) QC Report
+ Written by Volker Englisch
+ ================================================================ -->
 <xsl:transform               xmlns:xsl = 'http://www.w3.org/1999/XSL/Transform'
                              xmlns:cdr = 'cips.nci.nih.gov/cdr'
                                version = '1.0'>
@@ -19,17 +23,21 @@
                                 select = "document('cdrutil:/docid')"/>
  <xsl:variable                    name = "whoAmI"
                                 select = "'Licensee'"/>
+ <xsl:variable                    name = "dateTime"
+                                select = "document('cdrutil:/date')"/>
+
  <!--
  ======================================================================
  Main Template
  ====================================================================== -->
  <xsl:template                   match = "/">
   <!-- <!DOCTYPE HTML PUBLIC '-//IETF//DTD HTML//EN' /> -->
-  <HTML>
-   <HEAD>
+  <xsl:element                    name = "html">
+   <xsl:element                   name = "head">
     <xsl:variable                 name = "cdrdocs"
                                 select = "document('cdrx:/*/CdrCtl')"/>
-    <TITLE>
+
+    <xsl:element                  name = "title">
      <xsl:value-of              select = "concat('CDR',
                                            number(
                                            substring-after($docID, 'CDR')))"/>
@@ -37,92 +45,114 @@
      <xsl:value-of              select = "substring-before(
                                            concat($cdrdocs/CdrDocCtl/
                                                   DocTitle, ';'), ';')"/>
-    </TITLE>
-    <STYLE type='text/css'>
+    </xsl:element>
+
+    <xsl:element                  name = "style">
+     <xsl:attribute               name = "type">
+      <xsl:text>text/css</xsl:text>
+     </xsl:attribute>
+     <xsl:text>
+     body          { font-family: Arial, Helvetica, sans-serif; 
+                     padding: 0; }
      .miscdoc   { background-color: DFDFDF; }
+     .label-big    { font-size: 1.1em;     /* Using 1.2m appears to big on IE */
+                     font-weight: bold;
+                     margin-top: 1.0em; }  /* Using medium to small on FireFx */
+     .label-small  { font-weight: bold; }
+     .text-bold    { font-weight: bold; }
+     ul            { margin: 0 0 0 16 ;
+                     padding-left: 0;}
+     li            { margin: .1em; }
+     .comment-attrib {
+                     font-style: italic; }
+     /* Clear floats after the columns */
+     .status-info  { margin-top: 1.0em; }
+     .row          { margin-top: .5em; }
+     .row:after    { content: "";
+                     display: table;
+                     clear: both; }
+     .column       { float: left; 
+                     min-height: 1px; }
+     .left         { width: 30%; }
+     .right        { width: 70%; }
+     .image-center { text-align: center;
+                     margin-top: 1.0em; }
+     .big          { font-size: 14pt;
+                     font-weight: bold; }
+     .center       { text-align: center; }
+     .date-header  { text-align: center;
+                     font-weight: bold;
+                     margin-bottom: 14px; }
+     table         { width: 100%; }
+     table, tr, td, th { border: 1px solid black;
+                         border-collapse: collapse; }
+     .language     { font-weight: bold; }
+     .label
+
+     </xsl:text>
      <xsl:call-template           name = "defaultStyle"/>
      <xsl:call-template           name = "rsInsertionDeletionStyle"/>
-    </STYLE>
-   </HEAD>
-   <BASEFONT                      FACE = 'Arial, Helvetica, sans-serif' />
+    </xsl:element>
+   </xsl:element>
+
    <xsl:apply-templates         select = "Licensee"/>
-  </HTML>
+
+  </xsl:element>
  </xsl:template>
 
 
  <!--
  ===================================================================
- Generate the HTML for the Terminology QC Report
+ Generate the HTML for the Licensee QC Report
  =================================================================== -->
  <xsl:template                   match = "Licensee">
-  <BODY>
+  <xsl:element                    name = "body">
+   <xsl:attribute                 name = "class">
+    <xsl:text>report</xsl:text>
+   </xsl:attribute>
 
-  <!--
-  ==================================================================
-  Display Report heading and subheading
-  ================================================================== -->
-  <span class="big">
-    <center>
-     <xsl:text>Licensee</xsl:text>
-     <br/>
-     <xsl:text>QC Report</xsl:text>
-    </center>
-  </span>
-  <b>
-    <center>
-     <xsl:value-of              select = "document(
-                                           concat('cdrutil:/date/%25B %25#d,',
-                                                  ' %25Y %25#I:%25M% 25p'))"/>
-    </center>
-  </b>
-  <p/>
+   <!--
+   ==================================================================
+   Display Report Name
+   ================================================================== -->
+   <xsl:call-template             name = "qcReportHeader">
+    <xsl:with-param               name = "reportName"
+                                select = "'PDQ Partner'"/>
+   </xsl:call-template>
 
-  <!--
-  ====================================================================
-  Display CDR ID
-  ==================================================================== -->
-  <span class="big">
-    <xsl:value-of               select = "concat('CDR',
+   <!--
+   ====================================================================
+   Display date as subheading
+   ==================================================================== -->
+   <xsl:call-template             name = "blockTitle">
+    <xsl:with-param               name = "label"
+                                select = "concat('CDR',
                                            number(
                                            substring-after($docID, 'CDR')))"/>
-  </span>
-  <p/>
+   </xsl:call-template>
+
 
   <!--
   ===================================================================
   Display Document Title
   =================================================================== -->
-  <table        xsl:use-attribute-sets = "table">
    <xsl:apply-templates         select = "LicenseeInformation"/>
-  </table>
-  <p/>
 
-  <table        xsl:use-attribute-sets = "table">
+
    <xsl:apply-templates         select = "ContactPersons"/>
-  </table>
-  <p/>
 
-  <table        xsl:use-attribute-sets = "table">
-   <xsl:apply-templates         select = "ApplicationInformation"/>
-  </table>
-  <p/>
-
-  <table        xsl:use-attribute-sets = "table">
    <xsl:apply-templates         select = "FtpInformation"/>
-  </table>
-  <p/>
 
-  <table        xsl:use-attribute-sets = "table">
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Date Last Modified</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:value-of              select = "DateLastModified"/>
-    </td>
-   </tr>
-  </table>
-  </BODY>
+   <xsl:call-template             name = "labelTextRow">
+    <xsl:with-param               name = "label"
+                                select = "'Date Last Modified'"/>
+    <xsl:with-param               name = "labelSize"
+                                select = "'label-small'"/>
+    <xsl:with-param               name = "text"
+                                select = "DateLastModified"/>
+   </xsl:call-template>
+
+  </xsl:element>
  </xsl:template>
 
 
@@ -131,120 +161,55 @@
  Generate the HTML for the Licensee Name Information
  =================================================================== -->
  <xsl:template                   match = "LicenseeInformation">
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <span class="big">Licensee Information</span>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:choose>
-      <xsl:when                   test = "../FtpInformation/
-                                          AccountBlocked = 'Yes'">
-       <span class="error">
-        <b>*** Account Blocked ***</b>
-       </span>
-      </xsl:when>
-      <xsl:otherwise>
-       <!-- Display status of vendor if account isn't blocked yet -->
-       <xsl:choose>
-        <xsl:when                 test = "not(LicenseeStatusDates/
-                                              ProductionInactivation)
-                                          and
-                                          LicenseeStatusDates/
-                                          ProductionActivation">
-         <span style="color: blue; font-style: italic;">
-          <b>Regular, active</b>
-         </span>
-        </xsl:when>
-        <xsl:when                 test = "LicenseeStatusDates/
-                                              ProductionInactivation">
-         <span style="color: red; font-style: italic;">
-          <b>Regular, inactive</b>
-         </span>
-        </xsl:when>
-        <xsl:when                 test = "not(LicenseeStatusDates/
-                                              TestInactivation)
-                                          and
-                                          not(LicenseeStatusDates/
-                                          ProductionActivation)">
-         <span style="color: orange; font-style: italic;">
-          <b>Test, active</b>
-         </span>
-        </xsl:when>
-        <xsl:when                 test = "LicenseeStatusDates/
-                                              TestInactivation
-                                          and
-                                          not(LicenseeStatusDates/
-                                          ProductionActivation)">
-         <span style="color: red; font-style: italic;">
-          <b>Test, inactive</b>
-         </span>
-        </xsl:when>
-       </xsl:choose>
-      </xsl:otherwise>
-     </xsl:choose>
-    </td>
-   </tr>
+
+  <xsl:call-template              name = "labelStatusRow">
+   <xsl:with-param                name = "label"
+                                select = "'PDQ Partner Information'"/>
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-big'"/>
+  </xsl:call-template>
 
   <xsl:apply-templates          select = "LicenseeNameInformation"/>
 
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <b>Organization Type</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:apply-templates        select = "OrganizationType"/>
-   </td>
-  </tr>
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
+                                select = "'Organization Type'"/>
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-small'"/>
+   <xsl:with-param                name = "text"
+                                select = "OrganizationType"/>
+  </xsl:call-template>
 
+  <xsl:apply-templates          select = "ContactDetail"/>
 
-   <xsl:apply-templates         select = "ContactDetail"/>
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
+                                select = "'PDQ Partner Type'"/>
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-small'"/>
+   <xsl:with-param                name = "text"
+                                select = "LicenseeType"/>
+  </xsl:call-template>
 
-
-
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <b>Licensee Type</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:apply-templates        select = "LicenseeType"/>
-   </td>
-  </tr>
-
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <b>Licensee Status</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:apply-templates        select = "LicenseeStatus"/>
-   </td>
-  </tr>
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
+                                select = "'PDQ Partner Status'"/>
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-small'"/>
+   <xsl:with-param                name = "text"
+                                select = "LicenseeStatus"/>
+  </xsl:call-template>
 
   <xsl:apply-templates          select = "LicenseeStatusDates"/>
 
-
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <xsl:text> </xsl:text>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:text> </xsl:text>
-   </td>
-  </tr>
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-     <span class="big">Comments</span>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:element                  name = "ul">
-     <xsl:for-each              select = "Comment">
-      <xsl:element                name = "li">
-       <xsl:value-of            select = "."/>
-      </xsl:element>
-     </xsl:for-each>
-    </xsl:element>
-   </td>
-  </tr>
-
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
+                                select = "'Comment'"/>
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-small'"/>
+   <xsl:with-param                name = "text"
+                                select = "Comment"/>
+  </xsl:call-template>
 
  </xsl:template>
 
@@ -254,43 +219,44 @@
  Generate the HTML for the Licensee Name Information
  =================================================================== -->
  <xsl:template                   match = "LicenseeNameInformation">
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <b>Official Name</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:apply-templates        select = "OfficialName/
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
+                                select = "'Official Name'"/>
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-small'"/>
+   <xsl:with-param                name = "text"
+                                select = "OfficialName/
                                           Name"/>
-   </td>
-  </tr>
+  </xsl:call-template>
 
-  <xsl:for-each                 select = "OtherNames/AlternateName">
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Alternate Name</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:apply-templates       select = "Name"/>
-    </td>
-   </tr>
-  </xsl:for-each>
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
+                                select = "'Alternate Name'"/>
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-small'"/>
+   <xsl:with-param                name = "text"
+                                select = "OtherNames/
+                                          AlternateName"/>
+  </xsl:call-template>
 
-  <xsl:for-each                 select = "OtherNames/FormerName">
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Former Name</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:apply-templates       select = "Name"/>
-    </td>
-   </tr>
-  </xsl:for-each>
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
+                                select = "'Former Name'"/>
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-small'"/>
+   <xsl:with-param                name = "text"
+                                select = "OtherNames/
+                                          FormerName"/>
+  </xsl:call-template>
 
-   <xsl:apply-templates         select = "OtherNames/Comment"
-                                  mode = "withAttribute">
-    <xsl:with-param               name = "label"
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
                                 select = "'Name Comment'"/>
-   </xsl:apply-templates>
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-small'"/>
+   <xsl:with-param                name = "text"
+                                select = "Comment"/>
+  </xsl:call-template>
 
  </xsl:template>
 
@@ -300,66 +266,62 @@
  Generate the HTML for the Licensee Status Dates
  =================================================================== -->
  <xsl:template                   match = "LicenseeStatusDates">
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <br/>
-    <span class="big">Licensee Status Dates</span>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:text> </xsl:text>
-   </td>
-  </tr>
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <b>Test Activation</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:apply-templates        select = "TestActivation"/>
-   </td>
-  </tr>
+  <xsl:call-template              name = "blockTitle">
+   <xsl:with-param                name = "label"
+                                select = "'Licensee Status Dates'"/>
+  </xsl:call-template>
+
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
+                                select = "'Test Activation'"/>
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-small'"/>
+   <xsl:with-param                name = "text"
+                                select = "TestActivation"/>
+  </xsl:call-template>
 
   <xsl:if                         test = "TestExtension">
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <b>Test Extension</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:apply-templates        select = "TestExtension"/>
-   </td>
-  </tr>
+   <xsl:call-template             name = "labelTextRow">
+    <xsl:with-param               name = "label"
+                                select = "'Test Extension'"/>
+    <xsl:with-param               name = "labelSize"
+                                select = "'label-small'"/>
+    <xsl:with-param               name = "text"
+                                select = "TestExtension"/>
+   </xsl:call-template>
   </xsl:if>
 
   <xsl:if                         test = "TestInactivation">
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <b>Test Inactivation</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:apply-templates        select = "TestInactivation"/>
-   </td>
-  </tr>
+   <xsl:call-template             name = "labelTextRow">
+    <xsl:with-param               name = "label"
+                                select = "'Test Inactivation'"/>
+    <xsl:with-param               name = "labelSize"
+                                select = "'label-small'"/>
+    <xsl:with-param               name = "text"
+                                select = "TestInactivation"/>
+   </xsl:call-template>
   </xsl:if>
 
   <xsl:if                         test = "ProductionActivation">
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <b>Production Activation</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:apply-templates        select = "ProductionActivation"/>
-   </td>
-  </tr>
+   <xsl:call-template             name = "labelTextRow">
+    <xsl:with-param               name = "label"
+                                select = "'Production Activation'"/>
+    <xsl:with-param               name = "labelSize"
+                                select = "'label-small'"/>
+    <xsl:with-param               name = "text"
+                                select = "ProductionActivation"/>
+   </xsl:call-template>
   </xsl:if>
 
   <xsl:if                         test = "ProductionInactivation">
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <b>Production Inactivation</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:apply-templates        select = "ProductionInactivation"/>
-   </td>
-  </tr>
+   <xsl:call-template             name = "labelTextRow">
+    <xsl:with-param               name = "label"
+                                select = "'Production Inactivation'"/>
+    <xsl:with-param               name = "labelSize"
+                                select = "'label-small'"/>
+    <xsl:with-param               name = "text"
+                                select = "ProductionInactivation"/>
+   </xsl:call-template>
   </xsl:if>
  </xsl:template>
 
@@ -369,57 +331,44 @@
  Generate the HTML for the Ftp Information
  =================================================================== -->
  <xsl:template                   match = "FtpInformation">
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <br/>
-    <b>FTP Information</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:text> </xsl:text>
-   </td>
-  </tr>
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <b>User Name</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:apply-templates        select = "UserName"/>
-   </td>
-  </tr>
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <b>Password</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:value-of               select = "'************'"/>
-   </td>
-  </tr>
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <b>Account Blocked?</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:apply-templates        select = "AccountBlocked"/>
-   </td>
-  </tr>
+  <xsl:call-template              name = "blockTitle">
+   <xsl:with-param                name = "label"
+                                select = "'FTP Information'"/>
+  </xsl:call-template>
+
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
+                                select = "'User ID'"/>
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-small'"/>
+   <xsl:with-param                name = "text"
+                                select = "UserName"/>
+  </xsl:call-template>
+
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
+                                select = "'Account Blocked?'"/>
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-small'"/>
+   <xsl:with-param                name = "text"
+                                select = "AccountBlocked"/>
+  </xsl:call-template>
  </xsl:template>
 
 
  <!--
  ===================================================================
- Generate the HTML for the Licensee Name Information
+ Generate the HTML for the PDQ Partner Contact Information
  =================================================================== -->
  <xsl:template                   match = "ContactPersons">
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <span class="big">Contact Persons</span>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:text> </xsl:text>
-    </td>
-   </tr>
+  <xsl:call-template              name = "blockTitle">
+   <xsl:with-param                name = "label"
+                                select = "'Contact Persons'"/>
+  </xsl:call-template>
 
-    <xsl:apply-templates        select = "ContactPerson"/>
+  <!-- Adding each person's contact information
+       ======================================== -->
+  <xsl:apply-templates          select = "ContactPerson"/>
 
  </xsl:template>
 
@@ -429,102 +378,33 @@
  Generate the HTML for the Licensee Name Information
  =================================================================== -->
  <xsl:template                   match = "ContactPerson">
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Contact Name</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <b>
-     <xsl:apply-templates        select = "ContactName"/>
-     </b>
-    </td>
-   </tr>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Contact Type</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:for-each               select = "ContactType">
-      <xsl:value-of              select = "."/><br/>
-     </xsl:for-each>
-    </td>
-   </tr>
 
-   <xsl:apply-templates        select = "ContactDetail"/>
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
+                                select = "'Contact Name'"/>
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-small'"/>
+   <xsl:with-param                name = "text"
+                                select = "ContactName"/>
+   <xsl:with-param                name = "text-style"
+                                select = "'text-bold'"/>
+  </xsl:call-template>
+
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
+                                select = "'Contact Role'"/>
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-small'"/>
+   <xsl:with-param                name = "text"
+                                select = "ContactRole"/>
+  </xsl:call-template>
+
+  <!-- Adding address information for each contact person
+       ================================================== -->
+  <xsl:apply-templates          select = "ContactDetail"/>
 
  </xsl:template>
 
-
- <!--
- ===================================================================
- Generate the HTML for the Licensee Name Information
- =================================================================== -->
- <xsl:template                   match = "ApplicationInformation">
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <span class="big">Application Information</span>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:text> </xsl:text>
-    </td>
-   </tr>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Distribution Methods</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:for-each              select = "DistributionMethods/
-                                          DistributionMethod">
-      <li>
-       <xsl:value-of             select = "."/>
-      </li>
-     </xsl:for-each>
-    </td>
-   </tr>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Audiences</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:for-each              select = "Audiences/
-                                          Audience">
-      <li>
-       <xsl:value-of             select = "."/>
-      </li>
-     </xsl:for-each>
-    </td>
-   </tr>
- </xsl:template>
-
-
- <!--
- ===================================================================
- Generate the HTML for the Licensee Name Information
- =================================================================== -->
- <xsl:template                   match = "Status">
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <span class="big">Status</span>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:text> </xsl:text>
-    </td>
-   </tr>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Current Status</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-    <xsl:apply-templates         select = "CurrentStatus"/>
-    </td>
-   </tr>
-
-   <xsl:apply-templates         select = "Comment"
-                                  mode = "withAttribute">
-    <xsl:with-param               name = "label"
-                                select = "'Status Comment'"/>
-   </xsl:apply-templates>
- </xsl:template>
 
 
  <!--
@@ -532,126 +412,378 @@
  Generate the HTML for the Licensee Name Information
  =================================================================== -->
  <xsl:template                   match = "ContactDetail">
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <br/>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <br/>
-    </td>
-   </tr>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <b>Address</b>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:for-each               select = "PostalAddress/
-                                           Street">
-      <xsl:value-of              select = "."/>
-      <br/>
-     </xsl:for-each>
-    </td>
-   </tr>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <xsl:text> </xsl:text>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-     <xsl:if                      test = "PostalAddress/
-                                          City">
-      <xsl:value-of             select = "PostalAddress/
-                                          City"/>
-      <xsl:text>, </xsl:text>
-     </xsl:if>
-    <xsl:value-of               select = "PostalAddress/
-                                          PoliticalSubUnit_State"/>
-    <xsl:text> </xsl:text>
-    <xsl:value-of               select = "PostalAddress/
-                                          PostalCode_ZIP"/>
-    </td>
-   </tr>
-   <tr>
-    <td         xsl:use-attribute-sets = "cell1of2">
-     <xsl:text> </xsl:text>
-    </td>
-    <td         xsl:use-attribute-sets = "cell2of2">
-    <xsl:apply-templates         select = "PostalAddress/
-                                           Country"/>
-    </td>
-   </tr>
 
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <b>Phone</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:value-of               select = "Phone"/>
-   </td>
-  </tr>
+  <xsl:apply-templates          select = "PostalAddress">
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-small'"/>
+  </xsl:apply-templates>
 
- <xsl:if                          test = "TollFreePhone">
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <b>Toll Free Phone</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:value-of               select = "TollFreePhone"/>
-   </td>
-  </tr>
- </xsl:if>
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
+                                select = "'Phone'"/>
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-small'"/>
+   <xsl:with-param                name = "text"
+                                select = "Phone"/>
+  </xsl:call-template>
 
- <xsl:if                          test = "Fax">
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <b>Fax</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:value-of               select = "Fax"/>
-   </td>
-  </tr>
- </xsl:if>
-
- <xsl:if                          test = "Email">
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <b>Email</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:for-each               select = "Email">
-     <xsl:call-template            name = "createEmailLink"/>
-    </xsl:for-each>
-   </td>
-  </tr>
- </xsl:if>
-
- <xsl:if                          test = "WebSite">
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <b>Web</b>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:for-each               select = "WebSite">
-     <xsl:call-template           name = "createWebLink"/>
-     <br/>
-     <xsl:value-of              select = "."/>
-    </xsl:for-each>
-   </td>
-  </tr>
- </xsl:if>
-
-  <tr>
-   <td          xsl:use-attribute-sets = "cell1of2">
-    <br/>
-   </td>
-   <td          xsl:use-attribute-sets = "cell2of2">
-    <xsl:text> </xsl:text>
-   </td>
-  </tr>
-
-   <xsl:apply-templates         select = "Comment"
-                                  mode = "withAttribute">
+  <xsl:if                         test = "TollFreePhone">
+   <xsl:call-template             name = "labelTextRow">
     <xsl:with-param               name = "label"
+                                select = "'Toll Free Phone'"/>
+    <xsl:with-param               name = "labelSize"
+                                select = "'label-small'"/>
+    <xsl:with-param               name = "text"
+                                select = "TollFreePhone"/>
+   </xsl:call-template>
+  </xsl:if>
+
+  <xsl:if                         test = "FAX">
+   <xsl:call-template             name = "labelTextRow">
+    <xsl:with-param               name = "label"
+                                select = "'FAX'"/>
+    <xsl:with-param               name = "labelSize"
+                                select = "'label-small'"/>
+    <xsl:with-param               name = "text"
+                                select = "FAX"/>
+   </xsl:call-template>
+  </xsl:if>
+
+  <xsl:if                         test = "Email">
+   <xsl:call-template             name = "labelTextRow">
+    <xsl:with-param               name = "label"
+                                select = "'Email'"/>
+    <xsl:with-param               name = "labelSize"
+                                select = "'label-small'"/>
+    <xsl:with-param               name = "text"
+                                select = "Email"/>
+   </xsl:call-template>
+  </xsl:if>
+
+  <xsl:if                         test = "WebSite">
+   <xsl:call-template             name = "labelTextRow">
+    <xsl:with-param               name = "label"
+                                select = "'Web'"/>
+    <xsl:with-param               name = "labelSize"
+                                select = "'label-small'"/>
+    <xsl:with-param               name = "text"
+                                select = "WebSite"/>
+   </xsl:call-template>
+  </xsl:if>
+
+  <xsl:apply-templates          select = "Comment"
+                                  mode = "withAttribute">
+   <xsl:with-param                name = "label"
                                 select = "'Status Comment'"/>
-   </xsl:apply-templates>
+  </xsl:apply-templates>
+ </xsl:template>
+
+ <!--
+ ======================================================================
+ Template to create a block title
+ ====================================================================== -->
+ <xsl:template                    name = "blockTitle">
+  <xsl:param                      name = "label"/>
+
+  <xsl:element                    name = "div">
+   <xsl:attribute                 name = "class">
+    <xsl:text>label-big</xsl:text>
+   </xsl:attribute>
+   <xsl:value-of                select = "$label"/>
+  </xsl:element>
+ </xsl:template>
+
+ <!--
+ ======================================================================
+ Template to create a two column row display of label/text pair.
+ ====================================================================== -->
+ <xsl:template                    name = "labelTextRow">
+  <xsl:param                      name = "label"/>
+  <xsl:param                      name = "labelSize"/>
+  <xsl:param                      name = "text"/>
+  <xsl:param                      name = "text-style"/>
+  <xsl:param                      name = "addThis"/>
+
+  <xsl:element                    name = "div">
+   <xsl:attribute                 name = "class">
+    <xsl:text>row</xsl:text>
+   </xsl:attribute>
+
+   <xsl:element                   name = "div">
+    <xsl:attribute                name = "class">
+     <xsl:text>column left</xsl:text>
+    </xsl:attribute>
+
+    <xsl:element                  name = "span">
+     <xsl:attribute               name = "class">
+      <xsl:value-of             select = "$labelSize"/>
+     </xsl:attribute>
+     <xsl:value-of              select = "$label"/>
+    </xsl:element>
+   </xsl:element>
+
+   <xsl:element                   name = "div">
+    <xsl:attribute                name = "class">
+     <xsl:text>column right</xsl:text>
+    </xsl:attribute>
+
+    <!-- Single entry - markup email and URLs -->
+    <xsl:choose>
+     <xsl:when                    test = "count($text) = 1">
+      <xsl:choose>
+       <xsl:when                  test = "$label = 'Email'">
+        <xsl:for-each           select = "Email">
+         <xsl:call-template       name = "createEmailLink"/>
+        </xsl:for-each>
+       </xsl:when>
+       <xsl:when                  test = "$label = 'Web'">
+        <xsl:for-each           select = "WebSite">
+         <xsl:call-template       name = "createWebLink"/>
+         <xsl:element             name = "br"/>
+         <xsl:value-of          select = "."/>
+        </xsl:for-each>
+       </xsl:when>
+       <xsl:otherwise>
+        <xsl:choose>
+         <xsl:when                test = "$text-style">
+          <xsl:element            name = "span">
+           <xsl:attribute         name = "class">
+            <xsl:value-of       select = "$text-style"/>
+           </xsl:attribute>
+           <xsl:value-of        select = "$text"/>
+          </xsl:element>
+         </xsl:when>
+         <xsl:otherwise>
+          <xsl:value-of         select = "$text"/>
+         </xsl:otherwise>
+        </xsl:choose>
+       </xsl:otherwise>
+      </xsl:choose>
+
+      <xsl:if                     test = "$addThis">
+       <xsl:value-of            select = "concat(' (CDR',
+                                            number(
+                                              substring-after($addThis, 'CDR')), ')')"/>
+       <xsl:apply-templates     select = "@cdr:ref"/>
+      </xsl:if>
+     </xsl:when>
+     <!-- Multiple entries should always be displayed as a bulleted list -->
+     <xsl:otherwise>
+      <xsl:element                name = "ul">
+       <xsl:for-each            select = "$text">
+        <xsl:element              name = "li">
+         <xsl:if                  test = "@date">
+          <xsl:element            name = "span">
+           <xsl:attribute         name = "class">
+            <xsl:text>comment-attrib</xsl:text>
+           </xsl:attribute>
+          <xsl:value-of         select = "@date"/>
+          <xsl:text>, </xsl:text>
+          <xsl:value-of         select = "@user"/>
+          </xsl:element>
+          <xsl:element            name = "br"/>
+         </xsl:if>
+         <xsl:value-of          select = "."/>
+        </xsl:element>
+       </xsl:for-each>
+      </xsl:element>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:element>
+  </xsl:element>
+ </xsl:template>
+
+ <!--
+ ======================================================================
+ Template to create a two column row display of label/text pair.
+ ====================================================================== -->
+ <xsl:template                   match = "PostalAddress">
+  <xsl:param                      name = "label"
+                                select = "'Address'"/>
+  <xsl:param                      name = "labelSize"/>
+
+  <xsl:for-each                 select = "Street">
+   <xsl:element                   name = "div">
+    <xsl:attribute                name = "class">
+     <xsl:text>row</xsl:text>
+    </xsl:attribute>
+    <xsl:element                  name = "div">
+    <xsl:attribute                name = "class">
+     <xsl:text>column left</xsl:text>
+    </xsl:attribute>
+     <xsl:element                 name = "span">
+      <xsl:attribute              name = "class">
+       <xsl:value-of            select = "$labelSize"/>
+      </xsl:attribute>
+      <xsl:value-of             select = "$label"/>
+     </xsl:element>
+    </xsl:element>
+    <xsl:element                  name = "div">
+     <xsl:attribute               name = "class">
+      <xsl:text>column right</xsl:text>
+     </xsl:attribute>
+
+     <xsl:value-of              select = "."/>
+    </xsl:element>
+   </xsl:element>
+  </xsl:for-each>
+
+  <xsl:element                    name = "div">
+   <xsl:attribute                 name = "class">
+    <xsl:text>row</xsl:text>
+   </xsl:attribute>
+
+   <xsl:element                   name = "div">
+    <xsl:attribute                name = "class">
+     <xsl:text>column left</xsl:text>
+    </xsl:attribute>
+
+    <xsl:element                  name = "span">
+     <xsl:attribute               name = "class">
+      <xsl:value-of             select = "$labelSize"/>
+     </xsl:attribute>
+     <xsl:value-of              select = "''"/>
+    </xsl:element>
+   </xsl:element>
+
+   <xsl:element                   name = "div">
+    <xsl:attribute                name = "class">
+     <xsl:text>column right</xsl:text>
+    </xsl:attribute>
+
+    <xsl:value-of               select = "City"/>
+    <xsl:text>, </xsl:text>
+    <xsl:value-of               select = "PoliticalSubUnit_State"/>
+    <xsl:text> </xsl:text>
+    <xsl:value-of               select = "PostalCode_ZIP"/>
+   </xsl:element>
+  </xsl:element>
+
+  <xsl:element                   name = "div">
+   <xsl:attribute                name = "class">
+    <xsl:text>row</xsl:text>
+   </xsl:attribute>
+
+   <xsl:element                  name = "div">
+    <xsl:attribute                name = "class">
+     <xsl:text>column left</xsl:text>
+    </xsl:attribute>
+
+     <xsl:element                 name = "span">
+      <xsl:attribute              name = "class">
+       <xsl:value-of            select = "$labelSize"/>
+      </xsl:attribute>
+      <xsl:value-of             select = "''"/>
+     </xsl:element>
+    </xsl:element>
+    <xsl:element                  name = "div">
+     <xsl:attribute               name = "class">
+      <xsl:text>column right</xsl:text>
+     </xsl:attribute>
+
+    <xsl:value-of               select = "Country"/>
+   </xsl:element>
+  </xsl:element>
+
+ </xsl:template>
+
+ <!--
+ ======================================================================
+ Template to create a two column row display of label/text pair.
+ ====================================================================== -->
+ <xsl:template                    name = "labelStatusRow">
+  <xsl:param                      name = "label"/>
+  <xsl:param                      name = "labelSize"/>
+  <xsl:param                      name = "text"/>
+  <xsl:param                      name = "addThis"/>
+
+  <xsl:element                    name = "div">
+   <xsl:attribute                 name = "class">
+    <xsl:text>row</xsl:text>
+    <xsl:text> status-info</xsl:text>
+   </xsl:attribute>
+
+   <xsl:element                   name = "div">
+    <xsl:attribute                name = "class">
+     <xsl:text>column left</xsl:text>
+    </xsl:attribute>
+
+    <xsl:element                  name = "span">
+     <xsl:attribute               name = "class">
+      <xsl:value-of             select = "$labelSize"/>
+     </xsl:attribute>
+     <xsl:value-of              select = "$label"/>
+    </xsl:element>
+   </xsl:element>
+
+   <xsl:element                   name = "div">
+    <xsl:attribute                name = "class">
+     <xsl:text>column right</xsl:text>
+    </xsl:attribute>
+
+
+    <xsl:choose>
+     <xsl:when                    test = "../FtpInformation/
+                                          AccountBlocked = 'Yes'">
+      <xsl:element                name = "span">
+       <xsl:attribute             name = "class">
+        <xsl:text>error</xsl:text>
+       </xsl:attribute>
+       <xsl:text>*** Account Blocked ***</xsl:text>
+      </xsl:element>
+     </xsl:when>
+     <xsl:otherwise>
+      <!-- Display status of vendor if account isn't blocked yet -->
+      <xsl:choose>
+       <xsl:when                  test = "not(LicenseeStatusDates/
+                                              ProductionInactivation)
+                                          and
+                                          LicenseeStatusDates/
+                                          ProductionActivation">
+        <xsl:element              name = "span">
+         <xsl:attribute           name = "style">
+          <xsl:text>color: blue; font-style: italic; font-weight: bold;</xsl:text>
+         </xsl:attribute>
+         <xsl:text>Regular, active</xsl:text>
+        </xsl:element>
+       </xsl:when>
+       <xsl:when                  test = "LicenseeStatusDates/
+                                              ProductionInactivation">
+        <xsl:element              name = "span">
+         <xsl:attribute           name = "style">
+          <xsl:text>color: red; font-style: italic; font-weight: bold;</xsl:text>
+         </xsl:attribute>
+         <xsl:text>Regular, inactive</xsl:text>
+        </xsl:element>
+       </xsl:when>
+       <xsl:when                  test = "not(LicenseeStatusDates/
+                                              TestInactivation)
+                                          and
+                                          not(LicenseeStatusDates/
+                                          ProductionActivation)">
+        <xsl:element              name = "span">
+         <xsl:attribute           name = "style">
+          <xsl:text>color: orange; font-style: italic; font-weight: bold;</xsl:text>
+         </xsl:attribute>
+         <xsl:text>Test, active</xsl:text>
+        </xsl:element>
+       </xsl:when>
+       <xsl:when                  test = "LicenseeStatusDates/
+                                              TestInactivation
+                                          and
+                                          not(LicenseeStatusDates/
+                                          ProductionActivation)">
+        <xsl:element              name = "span">
+         <xsl:attribute           name = "style">
+          <xsl:text>color: red; font-style: italic; font-weight: bold;</xsl:text>
+         </xsl:attribute>
+         <xsl:text>Test, inactive</xsl:text>
+        </xsl:element>
+       </xsl:when>
+      </xsl:choose>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:element>
+  </xsl:element>
  </xsl:template>
 </xsl:transform>
