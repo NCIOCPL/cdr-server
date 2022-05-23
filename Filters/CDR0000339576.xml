@@ -71,13 +71,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
     =========================================================== -->
     <xsl:choose>
      <xsl:when                    test = "LinkedSummary
-                                           /LinkedSummaryAudience = 'Patients'
-                                          and
-                                          (LinkedSummary/LinkedKeyPoints
-                                           or
-                                           LinkedSummary/LinkedSummaryType =
-                                           concat('Integrative, alternative, ',
-                                                  'and complementary therapies'))">
+                                           /LinkedSummaryAudience = 'Patients'">
       <xsl:value-of             select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=', @cdr:href,
                                                  '&amp;ReportType=pat',
@@ -191,15 +185,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
        For reformatted patient summaries run 'pat' QC report
        =========================================================== -->
        <xsl:when                  test = "LinkedSummary
-                                            /LinkedSummaryAudience = 'Patients'
-                                          and
-                                          (LinkedSummary
-                                            /LinkedKeyPoints
-                                           or
-                                           LinkedSummary
-                                            /LinkedSummaryType =
-                                           concat('Integrative, alternative, ',
-                                                  'and complementary therapies'))">
+                                            /LinkedSummaryAudience = 'Patients'">
         <xsl:value-of           select = "concat('/cgi-bin/cdr/QcReport.py?',
                                                  'DocId=',
                                                  substring-before(@cdr:href, '#'),
@@ -2040,16 +2026,35 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  <!--
  =====================================================================
  Display TOC Summary Title with Deletion and Insertion
+
+ The users want immediate feedback to see if a summary is a SVPC doc
+ or not.  Adding a "SVPC summary header" here.
  ===================================================================== -->
  <xsl:template                   match = "SummaryTitle"
                                   mode = "TOC">
-  <h2>
+
+  <xsl:choose>
+   <xsl:when                      test = "/Summary/@SVPC='Yes'">
+    <xsl:element                  name = "div">
+     <xsl:attribute               name = "class">
+      <xsl:text>svpc-qc-header</xsl:text>
+     </xsl:attribute>
+     <xsl:text>Single View Patient Content (SVPC)</xsl:text>
+    </xsl:element>
+   </xsl:when>
+   <xsl:when                      test = "/Summary/@PartnerMergeSet='Yes'">
+    <xsl:element                  name = "div">
+     <xsl:attribute               name = "class">
+      <xsl:text>svpc-merge-qc-header</xsl:text>
+     </xsl:attribute>
+     <xsl:text>Merged Partner Patient Content (SVPC)</xsl:text>
+    </xsl:element>
+   </xsl:when>
+  </xsl:choose>
+
+  <xsl:element                    name = "h2">
    <xsl:apply-templates />
-  </h2>
-  <!--
-  <xsl:apply-templates          select = "../AltTitle"
-                                  mode = "TOC"/>
-  -->
+  </xsl:element>
  </xsl:template>
 
  <!--

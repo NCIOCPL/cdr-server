@@ -15,6 +15,10 @@
  (KeyPoints = No) in order to create the propper QC report link
  in the Media QC report.
 
+ All patient summaries have KeyPoints but those KeyPoints will
+ be converted into Title elements as part of the SVPC project.
+ We will need the audience carried forward to identify what
+ type of link will need to be created.
 ================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                              xmlns:cdr = "cips.nci.nih.gov/cdr"
@@ -39,21 +43,29 @@
    <xsl:attribute                 name = "cdr:ref">
     <xsl:value-of               select = "@cdr:ref"/>
    </xsl:attribute>
-   <Summary>
-   <xsl:copy-of                  select = "$docInfo/Summary/SummaryTitle"/>
+
+   <xsl:element                   name = "Summary">
+    <xsl:if                       test = "$docInfo/Summary/@SVPC">
+     <xsl:copy-of               select = "$docInfo/Summary/@SVPC"/>
+    </xsl:if>
+    <xsl:copy-of                select = "$docInfo/Summary
+                                                  /SummaryTitle"/>
+    <xsl:copy-of                select = "$docInfo/Summary
+                                                  /SummaryMetaData
+                                                  /SummaryAudience"/>
     <xsl:choose>
     <xsl:when                     test = "$docInfo//KeyPoint">
-     <KeyPoints>
+     <xsl:element                 name = "KeyPoints">
       <xsl:text>Yes</xsl:text>
-     </KeyPoints>
+     </xsl:element>
     </xsl:when>
     <xsl:otherwise>
-     <KeyPoints>
+     <xsl:element                 name = "KeyPoints">
       <xsl:text>No</xsl:text>
-     </KeyPoints>
+     </xsl:element>
     </xsl:otherwise>
    </xsl:choose>
-   </Summary>
+   </xsl:element>
   </xsl:element>
  </xsl:template>
 </xsl:transform>

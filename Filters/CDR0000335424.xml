@@ -79,12 +79,14 @@ OCECDR-4511 - Remove template which adds nct_id attributes to ProtocolRefs
    </xsl:choose>
   </xsl:variable>
 
+
  <!--
  =================================================================
  Copy control information and generate current date
  ================================================================= -->
  <xsl:template                    match = "Summary">
   <xsl:copy>
+   <xsl:apply-templates          select = "@*"/>
    <xsl:apply-templates          select = "document('cdrutil:/docid')"/>
    <xsl:apply-templates          select = "document('cdrx:/*/CdrCtl')"/>
 
@@ -621,31 +623,23 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
     <xsl:value-of                select = "@cdr:href"/>
    </xsl:attribute>
 
-   <SummaryRefText>
-    <!-- xsl:value-of                select = "."/-->
+   <xsl:element                    name = "SummaryRefText">
     <xsl:apply-templates/>
-   </SummaryRefText>
+   </xsl:element>
 
-   <LinkedSummary>
-    <LinkedSummaryType>
+   <xsl:element                    name = "LinkedSummary">
+    <xsl:element                   name = "LinkedSummaryType">
      <xsl:value-of               select = "$SummaryRefInfo/Summary
                                              /SummaryMetaData
                                              /SummaryType"/>
-    </LinkedSummaryType>
-    <LinkedSummaryAudience>
+    </xsl:element>
+    <xsl:element                   name = "LinkedSummaryAudience">
      <xsl:value-of               select = "$SummaryRefInfo/Summary
                                              /SummaryMetaData
                                              /SummaryAudience"/>
-    </LinkedSummaryAudience>
+    </xsl:element>
 
-    <xsl:if                        test = "$SummaryRefInfo/Summary
-                                             //KeyPoint">
-     <LinkedKeyPoints>
-      <xsl:value-of              select = "count($SummaryRefInfo/Summary
-                                             //KeyPoint)"/>
-     </LinkedKeyPoints>
-    </xsl:if>
-   </LinkedSummary>
+   </xsl:element>
   </xsl:element>
  </xsl:template>
 
