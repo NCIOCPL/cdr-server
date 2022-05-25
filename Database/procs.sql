@@ -19,47 +19,10 @@ IF EXISTS (SELECT *
 GO
 IF EXISTS (SELECT *
              FROM sysobjects
-            WHERE name = 'get_participating_orgs'
-              AND type = 'P')
-    DROP PROCEDURE get_participating_orgs
-GO
-IF EXISTS (SELECT *
-             FROM sysobjects
-            WHERE name = 'prot_init_mailer_docs'
-              AND type = 'P')
-    DROP PROCEDURE prot_init_mailer_docs
-GO
-IF EXISTS (SELECT *
-             FROM sysobjects
-            WHERE name = 'cdr_get_tree_context'
-              AND type = 'P')
-    DROP PROCEDURE cdr_get_tree_context
-GO
-IF EXISTS (SELECT *
-             FROM sysobjects
-            WHERE name = 'cdr_newly_published_trials'
-              AND type = 'P')
-    DROP PROCEDURE cdr_newly_published_trials
-GO
-IF EXISTS (SELECT *
-             FROM sysobjects
-            WHERE name = 'cdr_coop_group_report'
-              AND type = 'P')
-    DROP PROCEDURE cdr_coop_group_report
-GO
-IF EXISTS (SELECT *
-             FROM sysobjects
             WHERE name = 'cdr_get_count_of_links_to_persons'
               AND type = 'P')
     DROP PROCEDURE cdr_get_count_of_links_to_persons
 GO
-IF EXISTS (SELECT *
-             FROM sysobjects
-            WHERE name = 'get_prot_person_connections'
-              AND type = 'P')
-    DROP PROCEDURE get_prot_person_connections
-GO
-
 
 /**
  * Finds all the parents and children of a Term document in the CDR.  Two
@@ -176,59 +139,6 @@ AS
     DROP TABLE #children
 GO
 
-CREATE PROCEDURE cdr_get_tree_context
-    @doc_id INT
-AS
-    -- Do this or fail!
-    SET NOCOUNT ON;
-
-    DECLARE @nrows INT
-    CREATE TABLE #parents(child INT, parent INT)
-    CREATE INDEX idx_pc ON #parents(child)
-    CREATE INDEX idx_pp ON #parents(parent)
-    CREATE TABLE #children(child INT, parent INT)
-    CREATE INDEX idx_cc ON #children(child)
-    CREATE INDEX idx_cp ON #children(parent)
-    INSERT INTO #parents(child, parent)
-         SELECT child, parent
-           FROM term_parents
-          WHERE child = @doc_id
-    SELECT @nrows = @@ROWCOUNT
-    WHILE @nrows > 0
-    BEGIN
-            INSERT INTO #parents(child, parent)
-        SELECT DISTINCT tp.child, tp.parent
-                   FROM term_parents tp
-                   JOIN #parents p
-                     ON tp.child = p.parent
-                  WHERE p.parent NOT IN (SELECT child
-                                           FROM #parents)
-        SELECT @nrows = @@ROWCOUNT
-    END
-    INSERT INTO #children(child, parent)
-         SELECT child, parent
-           FROM term_parents
-          WHERE parent = @doc_id
-    SELECT @nrows = @@ROWCOUNT
-    WHILE @nrows > 0
-    BEGIN
-            INSERT INTO #children(child, parent)
-        SELECT DISTINCT tp.child, tp.parent
-                   FROM term_parents tp
-                   JOIN #children c
-                     ON tp.parent = c.child
-                  WHERE c.child NOT IN (SELECT parent
-                                          FROM #children)
-        SELECT @nrows = @@ROWCOUNT
-    END
-    SELECT DISTINCT * FROM #parents
-    UNION
-    SELECT * FROM #children
-    DROP TABLE #parents
-    DROP TABLE #children
-
-GO
-
 /*
  * Pull out count of protocol and summary documents linking to a
  * specified Person document (used by the Person QC report).
@@ -275,64 +185,6 @@ AS
        AND person.int_val  = @docId
   GROUP BY audience.value
 GO
-
-/*
- * Find all documents (except Citations) linked to the document
- * specified by the caller.  Returns a result set which includes
- * the specified document.  The result set contains two columns:
- * the id of the document (INTEGER) and the name of the document's
- * type.
- *
- *  @param doc_id       primary key of the document to be reported on.
- */
-CREATE PROC find_linked_docs
-    @doc_id INTEGER
-AS
-    -- Do this or fail!
-    SET NOCOUNT ON;
-
-    -- Local variables.
-    DECLARE @nrows INTEGER
-
-    -- Create a temporary table for the linked documents.
-    CREATE TABLE #linked_docs (id INTEGER, doc_type VARCHAR(32))
-
-    -- Seed the table with the caller's document ID.
-    INSERT INTO #linked_docs
-         SELECT @doc_id,
-                t.name
-           FROM document d
-           JOIN doc_type t
-             ON t.id = d.doc_type
-          WHERE d.id = @doc_id
-
-    -- Keep inserting until we exhaust the links.
-    -- Don't get citations.
-    SELECT @nrows = @@ROWCOUNT
-    WHILE @nrows > 0
-    BEGIN
-        INSERT INTO #linked_docs
-        SELECT DISTINCT d.id, t.name
-                   FROM document d
-                   JOIN link_net n
-                     ON n.target_doc = d.id
-                   JOIN doc_type t
-                     ON t.id = d.doc_type
-                   JOIN #linked_docs ld
-                     ON ld.id = n.source_doc
-                  WHERE d.id NOT IN (SELECT id FROM #linked_docs)
-                    AND t.name <> 'Citation'
-        SELECT @nrows = @@ROWCOUNT
-    END
-
-    -- Uncomment this next row if you want to drop the original document
-    -- DELETE FROM #linked_docs WHERE id = @doc_id
-
-    -- Give the caller the results.
-    SELECT DISTINCT id, doc_type FROM #linked_docs
-
-    -- Clean up after ourselves.
-    DROP TABLE #linked_docs
 
 /*
  * We found out the hard way that this is the only way to keep programmers
