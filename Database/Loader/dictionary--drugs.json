@@ -1,0 +1,166 @@
+{
+  "settings": {
+    "index": {
+      "number_of_shards": "1",
+      "max_ngram_diff": 150,
+      "analysis": {
+        "filter": {
+          "autocomplete_filter": {
+            "type": "edge_ngram",
+            "min_gram": 1,
+            "max_gram": 30,
+            "token_chars": [
+              "letter",
+              "digit",
+              "punctuation",
+              "symbol"
+            ]
+          },
+          "ngram_filter": {
+            "type": "ngram",
+            "min_gram": 1,
+            "max_gram": 30,
+            "token_chars": [
+              "letter",
+              "digit",
+              "punctuation",
+              "symbol"
+            ]
+          }
+        },
+        "analyzer": {
+          "autocomplete_index": {
+            "type": "custom",
+            "tokenizer": "classic",
+            "filter": [
+              "lowercase",
+              "autocomplete_filter",
+              "asciifolding"
+            ]
+          },
+          "lowercase_search": {
+            "filter": [
+              "lowercase",
+              "asciifolding"
+            ],
+            "tokenizer": "keyword"
+          },
+          "ngram_analyzer": {
+            "type": "custom",
+            "tokenizer": "keyword",
+            "filter": [
+              "lowercase",
+              "ngram_filter",
+              "asciifolding"
+            ]
+          },
+          "autocomplete_search": {
+            "type": "custom",
+            "tokenizer": "classic",
+            "filter": [
+              "lowercase",
+              "asciifolding"
+            ]
+          }
+        },
+        "normalizer": {
+          "caseinsensitive_normalizer": {
+            "type": "custom",
+            "char_filter": [],
+            "filter": [
+              "lowercase",
+              "asciifolding"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "name": {
+        "type": "keyword",
+        "normalizer": "caseinsensitive_normalizer",
+        "fields": {
+          "_autocomplete": {
+            "type": "text",
+            "analyzer": "autocomplete_index",
+            "search_analyzer": "autocomplete_search"
+          },
+          "_contain": {
+            "type": "text",
+            "analyzer": "ngram_analyzer",
+            "search_analyzer": "lowercase_search"
+          }
+        }
+      },
+      "type": {
+        "type": "keyword"
+      },
+      "term_name_type": {
+        "type": "keyword"
+      },
+      "first_letter": {
+        "type": "keyword",
+        "normalizer": "caseinsensitive_normalizer"
+      },
+      "preferred_name": {
+        "type": "keyword",
+        "normalizer": "caseinsensitive_normalizer"
+      },
+      "aliases": {
+        "type": "nested",
+        "include_in_root": true,
+        "properties": {
+          "type": {
+            "type": "keyword"
+          },
+          "name": {
+            "type": "keyword",
+            "normalizer": "caseinsensitive_normalizer",
+            "fields": {
+              "_contain": {
+                "type": "text",
+                "analyzer": "ngram_analyzer",
+                "search_analyzer": "lowercase_search"
+              }
+            }
+          }
+        }
+      },
+      "definition": {
+        "properties": {
+          "html": {
+            "type": "keyword"
+          },
+          "text": {
+            "type": "keyword"
+          }
+        }
+      },
+      "term_id": {
+        "type": "long"
+      },
+      "pretty_url_name": {
+        "type": "keyword"
+      },
+      "nci_concept_id": {
+        "type": "keyword"
+      },
+      "nci_concept_name": {
+        "type": "keyword"
+      },
+      "drug_info_summary_link": {
+        "properties": {
+          "text": {
+            "type": "keyword"
+          },
+          "url": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
+  }
+}
