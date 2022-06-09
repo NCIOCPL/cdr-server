@@ -452,7 +452,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
    <!-- HP Summaries End-->
 
    <xsl:if                        test = "TranslationOf">
-    <xsl:element                  name = "{name()}">
+    <xsl:element                  name = "TranslationOf">
      <xsl:attribute               name = "ref">
       <xsl:value-of             select = "TranslationOf/@cdr:ref"/>
      </xsl:attribute>
@@ -460,7 +460,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
    </xsl:if>
 
    <xsl:if                        test = "PatientVersionOf">
-    <xsl:element                  name = "{name()}">
+    <xsl:element                  name = "PatientVersionOf">
      <xsl:attribute               name = "ref">
       <xsl:value-of             select = "PatientVersionOf/@cdr:ref"/>
      </xsl:attribute>
@@ -1274,7 +1274,15 @@ LEFT OUTER JOIN query_term_pub m
                                   mode = "copy"/>
    <xsl:apply-templates         select = "SummaryDescription"
                                   mode = "copy"/>
-   <xsl:apply-templates         select = "SummaryURL"/>
+   <xsl:choose>
+    <xsl:when                     test = "$isPartnerDoc">
+     <xsl:apply-templates       select = "//ModuleExtra[1]/
+                                             SummaryURL"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates       select = "SummaryURL"/>
+    </xsl:otherwise>
+   </xsl:choose>
 
    <!--
    We will not create a toggle if this summary is a SVPC or partner document
