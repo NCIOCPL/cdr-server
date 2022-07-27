@@ -15,29 +15,6 @@
 <!--=================================================================-->
 <!--                       SIMPLE TYPES                              -->
 <!--=================================================================-->
-  <xsd:simpleType        name            = 'Audience'>
-    <xsd:restriction     base            = 'NotEmptyString'>
-      <xsd:enumeration   value           = 'Attorneys'/>
-      <xsd:enumeration   value           = 'Biomedical professionals'/>
-      <xsd:enumeration   value           = 'Business professionals'/>
-      <xsd:enumeration   value           = 'Dentists'/>
-      <xsd:enumeration   value           = 'Educators'/>
-      <xsd:enumeration   value           = 'General public'/>
-      <xsd:enumeration   value           = 'HMOs'/>
-      <xsd:enumeration   value           = 'Hospitals'/>
-      <xsd:enumeration   value           = 'Medical Faculty/Students'/>
-      <xsd:enumeration   value           = 'Medical Librarians'/>
-      <xsd:enumeration   value           = 'Nurses'/>
-      <xsd:enumeration   value           = 'Patients/Families'/>
-      <xsd:enumeration   value           = 'Pharmacists'/>
-      <xsd:enumeration   value           = 'Physicians'/>
-      <xsd:enumeration   value           = 'Researchers'/>
-      <xsd:enumeration   value           = 'Scientists'/>
-      <xsd:enumeration   value           = 'Universities'/>
-      <xsd:enumeration   value           = 'Other'/>
-    </xsd:restriction>
-  </xsd:simpleType>
-
   <xsd:simpleType        name            = 'ContactRole'>
     <xsd:restriction     base            = 'NotEmptyString'>
       <xsd:enumeration   value           = 'Business'/>
@@ -62,21 +39,27 @@
     </xsd:restriction>
   </xsd:simpleType>
 
-  <xsd:simpleType        name            = 'DistributionMethod'>
+
+  <xsd:simpleType        name            = 'DocType'>
     <xsd:restriction     base            = 'NotEmptyString'>
-      <xsd:enumeration   value           = 'CD-ROM'/>
-      <xsd:enumeration   value           = 'E-mail'/>
-      <xsd:enumeration   value           = 'World Wide Web'/>
-      <xsd:enumeration   value           = 'Print'/>
+      <xsd:enumeration   value           = 'DrugInformationSummary'/>
+      <xsd:enumeration   value           = 'GlossaryTerm'/>
+      <xsd:enumeration   value           = 'Media'/>
+      <xsd:enumeration   value           = 'Summary'/>
+      <xsd:enumeration   value           = 'Terminology'/>
       <xsd:enumeration   value           = 'Other'/>
     </xsd:restriction>
   </xsd:simpleType>
 
+
   <xsd:simpleType        name            = 'LicenseeStatus'>
     <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'NA-Storefront'/>
       <xsd:enumeration   value           = 'Production'/>
       <xsd:enumeration   value           = 'Production-inactive'/>
+      <xsd:enumeration   value           = 'Production-terminated'/>
       <xsd:enumeration   value           = 'Test'/>
+      <xsd:enumeration   value           = 'Test-expired'/>
       <xsd:enumeration   value           = 'Test-inactive'/>
     </xsd:restriction>
   </xsd:simpleType>
@@ -84,11 +67,21 @@
   <xsd:simpleType        name            = 'LicenseeType'>
     <xsd:restriction     base            = 'NotEmptyString'>
       <xsd:enumeration   value           = 'Regular'/>
-      <xsd:enumeration   value           = 'Internal'/>
       <xsd:enumeration   value           = 'Special'/>
-      <xsd:enumeration   value           = 'Printing'/>
+      <xsd:enumeration   value           = 'Storefront'/>
     </xsd:restriction>
   </xsd:simpleType>
+
+
+  <xsd:simpleType        name            = 'ContentTranslation'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'Arabic'/>
+      <xsd:enumeration   value           = 'Chinese'/>
+      <xsd:enumeration   value           = 'Japanese'/>
+      <xsd:enumeration   value           = 'Spanish'/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
 
   <xsd:simpleType        name            = 'OrganizationType'>
     <xsd:restriction     base            = 'NotEmptyString'>
@@ -98,6 +91,26 @@
       <xsd:enumeration   value           = 'PublicationReprint'/>
     </xsd:restriction>
   </xsd:simpleType>
+
+
+  <xsd:simpleType        name            = 'UsageDescription'>
+    <xsd:restriction     base            = 'xsd:string'>
+      <xsd:maxLength     value           = '600'/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
+
+  <xsd:simpleType        name            = 'Display'>
+    <xsd:restriction     base            = 'NotEmptyString'>
+      <xsd:enumeration   value           = 'English-unchanged'/>
+      <xsd:enumeration   value           = 'English-modified'/>
+      <xsd:enumeration   value           = 'English-fragments'/>
+      <xsd:enumeration   value           = 'Spanish-unchanged'/>
+      <xsd:enumeration   value           = 'Spanish-modified'/>
+      <xsd:enumeration   value           = 'Spanish-fragments'/>
+    </xsd:restriction>
+  </xsd:simpleType>
+
 
 <!--=================================================================-->
 <!--                 TOP-LEVEL DOCUMENT ELEMENT                      -->
@@ -122,9 +135,28 @@
     </xsd:sequence>
   </xsd:complexType>
 
+
 <!--=================================================================-->
 <!--                    OTHER COMPLEX TYPES                          -->
 <!--=================================================================-->
+  <xsd:complexType       name            = 'InterestedDocTypes'>
+    <xsd:sequence>
+      <xsd:element       name            = 'DocType'
+                         type            = 'DocType'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+
+  <xsd:complexType       name            = 'DisplayOfSummaries'>
+    <xsd:sequence>
+      <xsd:element       name            = 'Display'
+                         type            = 'Display'
+                         maxOccurs       = 'unbounded'/>
+    </xsd:sequence>
+  </xsd:complexType>
+
+
   <xsd:complexType       name            = 'LicenseeInformation'>
     <xsd:sequence>
       <xsd:element       name            = 'LicenseeNameInformation'
@@ -143,6 +175,19 @@
                          type            = 'LicenseeType'/>
       <xsd:element       name            = 'LicenseeStatus'
                          type            = 'LicenseeStatus'/>
+      <xsd:element       name            = 'ContentTranslation'
+                         type            = 'ContentTranslation'
+                         minOccurs       = '0'
+                         maxOccurs       = 'unbounded'/>
+      <xsd:element       name            = 'UsageDescription'
+                         type            = 'UsageDescription'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'InterestedDocTypes'
+                         type            = 'InterestedDocTypes'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'DisplayOfSummaries'
+                         type            = 'DisplayOfSummaries'
+                         minOccurs       = '0'/>
       <xsd:element       name            = 'LicenseeStatusDates'
                          type            = 'LicenseeStatusDates'/>
       <xsd:element       name            = 'Comment'
@@ -151,6 +196,7 @@
                          maxOccurs       = 'unbounded'/>
     </xsd:sequence>
   </xsd:complexType>
+
 
   <xsd:complexType       name            = 'LicenseeNameInformation'>
     <xsd:sequence>
@@ -165,6 +211,7 @@
                          maxOccurs       = 'unbounded'/>
     </xsd:sequence>
   </xsd:complexType>
+
 
   <xsd:complexType       name            = 'OtherNames'>
     <xsd:sequence>
@@ -182,6 +229,7 @@
                          maxOccurs       = 'unbounded'/>
     </xsd:sequence>
   </xsd:complexType>
+
 
   <xsd:complexType       name            = 'LicenseeStatusDates'>
     <xsd:sequence>
@@ -202,6 +250,7 @@
     </xsd:sequence>
   </xsd:complexType>
 
+
   <xsd:complexType       name            = "ContactPersons">
     <xsd:sequence>
       <xsd:element       name            = "ContactPerson"
@@ -209,6 +258,7 @@
                          maxOccurs       = "unbounded"/>
     </xsd:sequence>
   </xsd:complexType>
+
 
   <xsd:complexType       name            = "ContactPerson">
     <xsd:sequence>
@@ -224,6 +274,7 @@
                          type            = 'ContactType'/>
   </xsd:complexType>
 
+
   <xsd:complexType       name            = 'OrganizationName'>
     <xsd:sequence>
       <xsd:element       name            = 'Name'
@@ -233,10 +284,17 @@
                          type            = 'NotEmptyString'/>
   </xsd:complexType>
 
+
   <xsd:complexType       name            = 'FtpInformation'>
     <xsd:sequence>
       <xsd:element       name            = 'UserName'
                          type            = 'NotEmptyString'/>
+      <xsd:element       name            = 'SecondaryUserName'
+                         type            = 'NotEmptyString'
+                         minOccurs       = '0'/>
+      <xsd:element       name            = 'ExternalGmailAddress'
+                         type            = 'Email'
+                         minOccurs       = '0'/>
       <xsd:element       name            = 'AccountBlocked'
                          type            = 'YesNo'/>
     </xsd:sequence>

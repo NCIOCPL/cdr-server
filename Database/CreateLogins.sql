@@ -364,6 +364,8 @@ GRANT SELECT ON failed_login_attempts TO CdrGuest
 GO
 GRANT EXECUTE ON cdr_get_count_of_links_to_persons TO CdrGuest
 GO
+GRANT EXECUTE ON cdr_get_term_tree TO CdrGuest
+GO
 GRANT SELECT ON doc_info TO CdrGuest
 GO
 GRANT SELECT ON docs_with_pub_status TO CdrGuest
@@ -421,10 +423,6 @@ GO
 GRANT SELECT ON import_event TO CdrGuest
 GO
 GRANT SELECT ON external_map_type TO CdrGuest
-GO
-GRANT EXECUTE ON get_prot_person_connections TO CdrGuest
-GO
-GRANT EXECUTE ON get_prot_person_connections TO CdrPublishing
 GO
 GRANT SELECT ON pub_proc_nlm TO CdrGuest
 GO

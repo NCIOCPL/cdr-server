@@ -8,12 +8,12 @@ import datetime
 import difflib
 import glob
 import re
-import sys
 from cdrapi import db
+
 
 def compare(me, you, full=False):
     differ = difflib.Differ()
-    diffs = differ.compare(me.splitlines(True),you.splitlines(True))
+    diffs = differ.compare(me.splitlines(True), you.splitlines(True))
     if full:
         return "".join(diffs)
     changes = []
@@ -22,12 +22,14 @@ def compare(me, you, full=False):
             changes.append(line)
     return "".join(changes)
 
+
 class Filter:
     def __init__(self, title, doc, filename=None, doc_id=None):
         self.title = title
         self.doc = doc
         self.filename = filename
         self.doc_id = doc_id
+
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--directory", "-d", default=".")

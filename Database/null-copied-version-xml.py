@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 Remove the XML from all_doc_versions for archived versions.
@@ -35,7 +35,7 @@ opts = parser.parse_args()
 try:
     conn = db.connect(tier=opts.tier)
     cursor = conn.cursor()
-except:
+except Exception:
     logger.exception("unable to connect to database")
     raise
 cursor.execute("""\
@@ -65,7 +65,7 @@ while batches < opts.max_batches:
     try:
         cursor.execute(query)
         conn.commit()
-    except:
+    except Exception:
         logger.exception("UPDATE failure")
         failures += 1
         if failures > 5:

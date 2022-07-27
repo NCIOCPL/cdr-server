@@ -1,6 +1,8 @@
-#----------------------------------------------------------------------
+#!/usr/bin/env python3
+
+# ----------------------------------------------------------------------
 # Preprocess login creation/configuration script for this tier.
-#----------------------------------------------------------------------
+# ----------------------------------------------------------------------
 import time
 import cdrpw
 from cdrapi.settings import Tier
@@ -9,7 +11,7 @@ script = open("CreateLogins.sql", "rb").read()
 try:
     with open("d:/etc/cdrenv.rc") as fp:
         env = fp.read().strip()
-except:
+except Exception:
     env = "CBIIT"
 tier = Tier().name
 dboPw = cdrpw.password(env, tier, "cdr", "CdrSqlAccount")
