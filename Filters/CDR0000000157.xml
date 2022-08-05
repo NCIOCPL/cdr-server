@@ -183,7 +183,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
     Using search string 'cancer.gov' since some of the active
     documents my still use 'http:' as the protocol instead of 'https:'
     ================================================================== -->
-    <xsl:value-of              select = "substring-after(
+    <xsl:value-of               select = "substring-after(
                                            /Summary
                                            /SummaryMetaData
                                            /PDQBoard
@@ -191,7 +191,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
                                            'cancer.gov')"/>
    </xsl:when>
    <xsl:otherwise>
-    <xsl:value-of              select = "substring-after(
+    <xsl:value-of               select = "substring-after(
                                            /Summary
                                            /SummaryMetaData
                                            /PDQBoard
@@ -201,8 +201,8 @@ OCECDR-4123: Add HP/Patient URL to Summaries
   </xsl:choose>
  </xsl:variable>
 
- <xsl:variable                   name = "reviewers"
-                               select = "/Summary/
+ <xsl:variable                    name = "reviewers"
+                                select = "/Summary/
                                           SummaryMetaData//LeadReviewer"/>
 
  <xsl:variable                   name = "sumId"
@@ -213,9 +213,9 @@ OCECDR-4123: Add HP/Patient URL to Summaries
                                           SummarySection[
                                               @TrialSearchString='TopLevel']/
                                           SectMetaData"/>
- <xsl:variable                   name = "ageGroup">
+ <xsl:variable                    name = "ageGroup">
   <xsl:choose>
-   <xsl:when                     test = "contains(/Summary/
+   <xsl:when                      test = "contains(/Summary/
                                                    SummaryMetaData/
                                                    PDQBoard/
                                                    Board, 'Pediatric')">
@@ -1274,7 +1274,15 @@ LEFT OUTER JOIN query_term_pub m
                                   mode = "copy"/>
    <xsl:apply-templates         select = "SummaryDescription"
                                   mode = "copy"/>
-   <xsl:apply-templates         select = "SummaryURL"/>
+   <xsl:choose>
+    <xsl:when                     test = "$isPartnerDoc">
+     <xsl:apply-templates       select = "//ModuleExtra[1]/
+                                             SummaryURL"/>
+    </xsl:when>
+    <xsl:otherwise>
+     <xsl:apply-templates       select = "SummaryURL"/>
+    </xsl:otherwise>
+   </xsl:choose>
 
    <!--
    We will not create a toggle if this summary is a SVPC or partner document
@@ -1459,7 +1467,6 @@ LEFT OUTER JOIN query_term_pub m
 
   </xsl:element>
  </xsl:template>
-
 
 
  <!--
@@ -1699,7 +1706,7 @@ LEFT OUTER JOIN query_term_pub m
    <xsl:call-template             name = "listDevicesAttribute"/>
 
     <xsl:apply-templates/>
-   </xsl:element>
+  </xsl:element>
  </xsl:template>
 
 
@@ -1780,9 +1787,9 @@ LEFT OUTER JOIN query_term_pub m
  ==================================================================== -->
  <xsl:template                   match = "ListItem">
   <xsl:if                         test = "not(translate(., ' ', '') = '')">
-   <xsl:element                    name = "{name()}">
+   <xsl:element                   name = "{name()}">
     <xsl:apply-templates/>
-   </xsl:element>
+  </xsl:element>
   </xsl:if>
  </xsl:template>
 
@@ -2549,14 +2556,14 @@ LEFT OUTER JOIN query_term_pub m
  =========================================================================
  Template for in-line mark-up
  ========================================================================= -->
- <xsl:template                  match = "Emphasis       | Strong         |
-                                         Subscript      | Superscript    |
-                                         GeneName       | ScientificName |
-                                         ForeignName    | Note           |
-                                         QandADiv       | MarkedUpTitle  |
-                                         Question       | Answer">
-  <xsl:element                   name = "{name()}">
-   <xsl:call-template            name = "listDevicesAttribute"/>
+ <xsl:template                   match = "Emphasis       | Strong         |
+                                          Subscript      | Superscript    |
+                                          GeneName       | ScientificName |
+                                          ForeignName    | Note           |
+                                          QandADiv       | MarkedUpTitle  |
+                                          Question       | Answer">
+  <xsl:element                    name = "{name()}">
+   <xsl:call-template             name = "listDevicesAttribute"/>
    <xsl:apply-templates/>
   </xsl:element>
  </xsl:template>
@@ -2571,33 +2578,33 @@ LEFT OUTER JOIN query_term_pub m
  Create the Table template including the renamed attribute for
  the attribute ID. (cdr:ref ID needs to be renamed to id).
  ==================================================================== -->
- <xsl:template                  match = "Table">
+ <xsl:template                   match = "Table">
   <xsl:element                    name = "{name()}">
-   <xsl:attribute                name = "id">
-    <xsl:value-of              select = "./@cdr:id"/>
+   <xsl:attribute                 name = "id">
+    <xsl:value-of               select = "./@cdr:id"/>
    </xsl:attribute>
-   <xsl:if                       test = "./@ColSep">
-    <xsl:attribute               name = "ColSep">
-      <xsl:value-of            select = "./@ColSep"/>
+   <xsl:if                        test = "./@ColSep">
+    <xsl:attribute                name = "ColSep">
+      <xsl:value-of             select = "./@ColSep"/>
     </xsl:attribute>
    </xsl:if>
-   <xsl:if                       test = "./@Frame">
-    <xsl:attribute               name = "Frame">
-     <xsl:value-of             select = "./@Frame"/>
+   <xsl:if                        test = "./@Frame">
+    <xsl:attribute                name = "Frame">
+     <xsl:value-of              select = "./@Frame"/>
     </xsl:attribute>
    </xsl:if>
-   <xsl:if                       test = "./@RowSep">
-    <xsl:attribute               name = "RowSep">
-     <xsl:value-of             select = "./@RowSep"/>
+   <xsl:if                        test = "./@RowSep">
+    <xsl:attribute                name = "RowSep">
+     <xsl:value-of              select = "./@RowSep"/>
     </xsl:attribute>
    </xsl:if>
-   <xsl:if                       test = "./@TabStyle">
-    <xsl:attribute               name = "TabStyle">
-     <xsl:value-of             select = "./@TabStyle"/>
+   <xsl:if                        test = "./@TabStyle">
+    <xsl:attribute                name = "TabStyle">
+     <xsl:value-of              select = "./@TabStyle"/>
     </xsl:attribute>
    </xsl:if>
 
-   <xsl:call-template           name = "listDevicesAttribute"/>
+   <xsl:call-template            name = "listDevicesAttribute"/>
 
    <xsl:apply-templates/>
 
@@ -3078,11 +3085,11 @@ LEFT OUTER JOIN query_term_pub m
  <xsl:template                    name = "ToLearnMore">
   <xsl:choose>
    <xsl:when                      test = "SummaryMetaData/
-                                         SummaryLanguage = 'English'">
+                                          SummaryLanguage = 'English'">
     <xsl:choose>
      <xsl:when                    test = "SummaryMetaData/
-                                         SummaryType =
-                                           concat(
+                                          SummaryType =
+                                            concat(
                                             'Integrative, alternative, ',
                                             'and complementary therapies')">
       <xsl:variable               name = "miscDoc"
@@ -3104,7 +3111,7 @@ LEFT OUTER JOIN query_term_pub m
    <xsl:otherwise>
     <xsl:choose>
      <xsl:when                    test = "SummaryMetaData/
-                                         SummaryType =
+                                          SummaryType =
                                            concat(
                                             'Integrative, alternative, ',
                                             'and complementary therapies')">
@@ -3139,7 +3146,7 @@ LEFT OUTER JOIN query_term_pub m
   ===================================== -->
   <xsl:choose>
    <xsl:when                      test = "SummaryMetaData/
-                                         SummaryType = 'Treatment'">
+                                          SummaryType = 'Treatment'">
     <!--
     English Summaries, Patient, Treatment, Pediatric, About PDQ
     =========================================================== -->
@@ -3202,7 +3209,7 @@ LEFT OUTER JOIN query_term_pub m
     </xsl:apply-templates>
    </xsl:when>
    <xsl:when                      test = "SummaryMetaData/
-                                         SummaryType =
+                                          SummaryType =
                                            concat(
                                             'Integrative, alternative, ',
                                             'and complementary therapies')">
@@ -3240,7 +3247,7 @@ LEFT OUTER JOIN query_term_pub m
                                                          '/lastp'))"/>
   <xsl:choose>
    <xsl:when                      test = "SummaryMetaData/
-                                         SummaryType = 'Treatment'">
+                                          SummaryType = 'Treatment'">
     <xsl:choose>
      <xsl:when                    test = "contains($englishDoc/
                                                   Summary/
@@ -3279,7 +3286,7 @@ LEFT OUTER JOIN query_term_pub m
     </xsl:apply-templates>
    </xsl:when>
    <xsl:when                      test = "SummaryMetaData/
-                                         SummaryType =
+                                          SummaryType =
                                            concat(
                                             'Integrative, alternative, ',
                                             'and complementary therapies')">
@@ -3376,8 +3383,8 @@ LEFT OUTER JOIN query_term_pub m
       </xsl:otherwise>
      </xsl:choose>
     </xsl:variable>
-    <xsl:variable                name = "miscDoc"
-                               select = "document($miscUri)"/>
+    <xsl:variable                 name = "miscDoc"
+                                select = "document($miscUri)"/>
 
     <xsl:element                  name = "SummarySection">
      <xsl:attribute               name = "id">

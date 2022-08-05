@@ -1146,6 +1146,21 @@
                                 select = "'label-small'"/>
   </xsl:call-template>
 
+  <xsl:if                         test = "RequestedBy">
+  <!-- Adding a spacer -->
+  <xsl:call-template              name = "blockTitle">
+   <xsl:with-param                name = "label"
+                                select = "''"/>
+  </xsl:call-template>
+
+  <xsl:call-template              name = "approvedUseRow">
+   <xsl:with-param                name = "label"
+                                select = "'Requested By'"/>
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-small'"/>
+  </xsl:call-template>
+  </xsl:if>
+
  </xsl:template>
 
 
@@ -1179,7 +1194,7 @@
 
  <!--
  =======================================================================
- Template to display the Proposed Use Information
+ Template to display the Processing Status Information
  ======================================================================= -->
  <xsl:template                   match = "ProcessingStatus">
    <tr>
@@ -1218,9 +1233,10 @@
  ======================================================================
  Template to add the proposed use and the CDR-ID to the report.
  ====================================================================== -->
- <xsl:template                   match = "Summary |
-                                          Glossary|
-                                          CitationLink">
+ <xsl:template                   match = "Summary      |
+                                          Glossary     |
+                                          CitationLink |
+                                          RequestedBy">
 
   <xsl:element                    name = "li">
    <xsl:choose>
@@ -1231,6 +1247,9 @@
     <xsl:when                     test = "name() = 'CitationLink'">
      <xsl:value-of              select = "."/>
       <xsl:call-template          name = "createCitationQcLink"/>
+    </xsl:when>
+    <xsl:when                     test = "name() = 'RequestedBy'">
+     <xsl:value-of              select = "."/>
     </xsl:when>
     <xsl:otherwise>
      <xsl:value-of              select = "GlossaryTermName/
@@ -1436,6 +1455,9 @@
        </xsl:when>
        <xsl:when                  test = "$label = 'Citation(s)'">
         <xsl:apply-templates    select = "CitationLink"/>
+       </xsl:when>
+       <xsl:when                  test = "$label = 'Requested By'">
+        <xsl:apply-templates    select = "RequestedBy"/>
        </xsl:when>
       </xsl:choose>
      </xsl:element>
