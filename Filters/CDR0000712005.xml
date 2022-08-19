@@ -28,6 +28,8 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
  <!-- Setting default to QC report -->
 
  <xsl:param                       name = "isQC"
+                                select = "'Y'"/>
+ <xsl:param                       name = "DisplayQcOnlyMod"
                                 select = "'N'"/>
  <!--
  =================================================================
@@ -68,47 +70,60 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
                                 select = "document(concat('cdr:', $moduleRef,
                                                                   $docVersion))"/>
 
-    <!--
-    =============================================================================
-    The SummaryModuleLink only includes SummarySection elements from the
-    SummaryModule.
-    If the QC report is run with the display of the QC-only modules the users
-    want to include the SummaryTitle as a SectionTitle and display the
-    SummaryModuleLink content as a Sub-SummarySection.
-    We are capturing here all information that needs to be displayed but doesn't
-    belong in the regular denormalization for a SummaryModule.
-    ============================================================================= -->
-    <xsl:if                       test = "/Summary/@PartnerMergeSet
+  <!--
+  =============================================================================
+  The denormalized content for a SummaryModuleLink includes only SummarySection
+  elements but not the section title.
+  If the QC report is run with a SummaryModuleLink marked at QC-only the users
+  want to include the SummaryTitle of that module as a SectionTitle and display
+  the SummaryModuleLink content as a Sub-SummarySection.
+  We are here creating the element ModuleExtra to capture all information that
+  may need to be displayed as part of the QC report but isn't part of the 
+  regular denormalization of a SummaryModuleLink.
+  ============================================================================= -->
+  <xsl:if                         test = "/Summary/@PartnerMergeSet
                                           or
                                           (@UsedFor
                                            and
-                                           $isQC = 'Y')">
-    <xsl:element                  name = "ModuleExtra">
-     <xsl:attribute               name = "cdr:ref">
-      <xsl:value-of             select = "@cdr:ref"/>
-     </xsl:attribute>
-     <xsl:copy-of               select = "$moduleInfo/
+                                           $DisplayQcOnlyMod = 'Y'
+                                          )">
+   <xsl:element                   name = "ModuleExtra">
+    <xsl:attribute                name = "cdr:ref">
+     <xsl:value-of              select = "@cdr:ref"/>
+    </xsl:attribute>
+    <xsl:copy-of                select = "$moduleInfo/
                                            Summary/
                                            SummaryTitle"/>
-     <xsl:copy-of               select = "$moduleInfo/
+    <xsl:copy-of                select = "$moduleInfo/
                                            Summary/
                                            SummaryMetaData/
                                            SummaryURL"/>
-     <xsl:copy-of               select = "$moduleInfo/
+    <xsl:copy-of                select = "$moduleInfo/
                                            Summary/
                                            SummaryMetaData/
                                            MainTopics"/>
-     <xsl:copy-of               select = "$moduleInfo/
+    <xsl:copy-of                select = "$moduleInfo/
                                            Summary/
                                            SummaryMetaData/
                                            SummaryKeyWords"/>
-     <xsl:copy-of               select = "$moduleInfo/
+    <xsl:copy-of                select = "$moduleInfo/
                                            Summary/
                                            DateLastModified"/>
-    </xsl:element>
-    </xsl:if>
+   </xsl:element>
+  </xsl:if>
 
-    <xsl:apply-templates        select = "$moduleInfo/
+  <!--
+  All "regular" SummaryModuleLinks are denormalized.  Those that are "qc-only"
+  modules only need to be denormalized if their display is requested via the 
+  DisplayQcOnlyMod parameter set to 'Y'
+  ============================================================================ -->
+  <xsl:if                         test = "not(@UsedFor)
+                                          or
+                                          (@UsedFor
+                                           and
+                                           $DisplayQcOnlyMod = 'Y'
+                                          )">
+   <xsl:apply-templates         select = "$moduleInfo/
                                            Summary/
                                            SummarySection
                                              [not(SectMetaData/
@@ -127,13 +142,14 @@ OCECDR-4159: Modify QC Report filters to not display Module Changes Section
                                                   SectionType =
                                                       'Changes to summary')]]"
                                   mode = "module">
-   <xsl:with-param                name = "ref"
+    <xsl:with-param               name = "ref"
                                 select = "@cdr:ref"/>
-   <xsl:with-param                name = "usedfor"
+    <xsl:with-param               name = "usedfor"
                                 select = "@UsedFor"/>
-   <xsl:with-param                name = "module"
+    <xsl:with-param               name = "module"
                                 select = "'_sm'"/>
-  </xsl:apply-templates>
+   </xsl:apply-templates>
+  </xsl:if>
  </xsl:template>
 
 
