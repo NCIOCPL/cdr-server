@@ -5,6 +5,7 @@
 For Ohm release.
 """
 
+from argparse import ArgumentParser
 from cdrapi import db
 
 PROCS = (
@@ -15,7 +16,11 @@ PROCS = (
     "get_prot_person_connections",
     "select_changed_non_active_protocols",
 )
-conn = db.connect()
+
+parser = ArgumentParser()
+parser.add_argument("--tier")
+opts = parser.parse_args()
+conn = db.connect(tier=opts.tier)
 cursor = conn.cursor()
 for name in PROCS:
     print(f"dropping {name} ...")
@@ -50,5 +55,5 @@ AS
             ROLLBACK TRANSACTION
         END
     END
-""")
+""".replace("\n", "\r\n"))
     conn.commit()
