@@ -666,25 +666,58 @@ Filter to create Vendor Genetics Professionals XML documents
 
  <!--
  ================================================================
- Display a Table of SummaryRefs at the end of a Summary QC Report if the
- 'DisplaySumRefs' checkbox is checked.
+ Display a Table of SummaryRefs and SummaryFragmentRefs at the 
+ end of a Summary QC Report if the 'DisplaySumRefs' checkbox is 
+ checked.
  ================================================================ -->
  <xsl:template                   match = "SummaryRefSection">
   <xsl:if                         test = "$DisplaySummaryRefList='Y'">
-     <xsl:element                 name = "hr"/>
-     <xsl:element                 name = "h1">
-     <xsl:text>Table of Summary Reference Links</xsl:text>
+   <xsl:element                   name = "hr"/>
+   <xsl:element                   name = "h1">
+    <xsl:text>Table of Summary Reference Links</xsl:text>
+   </xsl:element>
+
+   <!-- Header Row -->
+   <xsl:element                   name = "table">
+    <xsl:attribute                name = "border">
+     <xsl:text>1</xsl:text>
+    </xsl:attribute>
+    <xsl:element                  name = "tr">
+     <xsl:element                 name = "th">
+       <xsl:text>In Section</xsl:text>
      </xsl:element>
 
-    <xsl:element                  name = "ul">
-    <xsl:for-each               select = "SummaryLink">
-     <xsl:element                 name = "li">
-      <xsl:value-of             select = "SummaryRefText"/>
+     <xsl:element                 name = "th">
+       <xsl:text>Element</xsl:text>
      </xsl:element>
-    </xsl:for-each>
+
+     <xsl:element                 name = "th">
+       <xsl:text>Text</xsl:text>
+     </xsl:element>
+
+     <xsl:element                 name = "th">
+       <xsl:text>href</xsl:text>
+     </xsl:element>
     </xsl:element>
 
-
+   <!-- Data Row -->
+    <xsl:for-each               select = "RefInfo">
+     <xsl:element                 name = "tr">
+      <xsl:element                name = "td">
+       <xsl:value-of            select = "InSection"/>
+      </xsl:element>
+      <xsl:element                name = "td">
+       <xsl:value-of            select = "name(child::*)"/>
+      </xsl:element>
+      <xsl:element                name = "td">
+       <xsl:value-of            select = "*/SummaryRefText"/>
+      </xsl:element>
+      <xsl:element                name = "td">
+       <xsl:value-of            select = "child::*/@cdr:href"/>
+      </xsl:element>
+     </xsl:element>
+    </xsl:for-each>
+   </xsl:element>
   </xsl:if>
  </xsl:template>
 

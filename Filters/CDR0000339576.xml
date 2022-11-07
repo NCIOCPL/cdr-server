@@ -29,6 +29,8 @@ OCECDR-3956: Allow CitationLinks in Image Captions
                                 select = "'N'"/>
  <xsl:param                       name = "DisplayPubImages"
                                 select = "'Y'"/>
+ <xsl:param                       name = "DisplayQcOnlyMod"
+                                select = "'N'"/>
 
  <xsl:variable                    name = "mediaAudience">
   <xsl:choose>
@@ -2137,6 +2139,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  </xsl:template>
 
 
+
  <!--
  ================================================================
  Template to create a target element for SummaryFragmetRef
@@ -2146,7 +2149,8 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  not work.  We need to create a target for the link - using a
  <span id=NNN> to make the links work.
  ================================================================ -->
- <xsl:template                   match = "SummarySection">
+ <xsl:template                   match = "SummarySection |
+                                          Deletion/SummarySection">
   <xsl:variable                   name = "title"
                                 select = "child::Title"/>
 
@@ -2360,16 +2364,19 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       <xsl:text>lnone</xsl:text>
      </xsl:when>
     </xsl:choose>
+    <!-- IS THIS NEEDED on the lists???
     <xsl:if                       test = "@iod">
      <xsl:choose>
       <xsl:when                   test = "@iod = 'Deletion'
                                            and
                                            descendant::Deletion[
                                               @RevisionLevel='proposed']">
+       -->
        <!-- Proposed text for BU is displayed which means we only want to
             add the Deletion class specifier when the RevisionLevel is
             not proposed because this specifier makes the text
             disappear via CSS -->
+       <!--
        <xsl:text></xsl:text>
       </xsl:when>
       <xsl:otherwise>
@@ -2378,6 +2385,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
       </xsl:otherwise>
      </xsl:choose>
     </xsl:if>
+    -->
    </xsl:attribute>
 
    <xsl:call-template             name = "addIdLinkTarget">
@@ -2398,7 +2406,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  <xsl:template                   match = "OrderedList">
   <xsl:apply-templates          select = "ListTitle"/>
   <!-- Handle ListItem now. -->
-  <ol>
+  <xsl:element                    name = "ol">
    <xsl:attribute                 name = "class">
     <xsl:choose>
      <xsl:when                    test = "@Style = 'UAlpha'">
@@ -2428,7 +2436,7 @@ OCECDR-3956: Allow CitationLinks in Image Captions
    </xsl:call-template>
 
    <xsl:apply-templates         select = "ListItem"/>
-  </ol>
+  </xsl:element>
  </xsl:template>
 
 
@@ -2438,14 +2446,33 @@ OCECDR-3956: Allow CitationLinks in Image Captions
  ===================================================================== -->
  <xsl:template                   match = "ListItem">
   <xsl:if                         test = "not(. = '')">
-   <li>
-    <xsl:for-each               select = "@iod">
-      <xsl:attribute              name = "class">
-       <xsl:value-of            select = "."/>
-      </xsl:attribute>
-     </xsl:for-each>
+   <xsl:element                   name = "li">
+    <xsl:choose>
+     <xsl:when                   test = "@iod = 'Deletion'
+                                         and
+                                           descendant::Deletion[
+                                              @RevisionLevel='proposed']
+                                         and
+                                           ($whoAmI = 'SummaryHPBU'
+                                            or
+                                            $whoAmI = 'SummaryPatBU')">
+       <!-- Proposed text for BU is displayed which means we only want to
+            add the Deletion class specifier when the RevisionLevel is
+            not proposed because this specifier makes the text
+            disappear via CSS -->
+      <xsl:text></xsl:text>
+     </xsl:when>
+     <xsl:otherwise>
+
+      <xsl:for-each               select = "@iod">
+       <xsl:attribute              name = "class">
+        <xsl:value-of            select = "."/>
+       </xsl:attribute>
+      </xsl:for-each>
+     </xsl:otherwise>
+    </xsl:choose>
     <xsl:apply-templates/>
-   </li>
+   </xsl:element>
   </xsl:if>
  </xsl:template>
 
