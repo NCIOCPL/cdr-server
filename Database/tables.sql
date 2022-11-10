@@ -1634,6 +1634,15 @@ login_failed INTEGER     NOT NULL DEFAULT 0,
 GO
 
 /*
+ * Drug terms the user doesn't want on the refresh-from-EVS page.
+ *
+ * id  foreign key into the all_docs table
+ */
+CREATE TABLE unrefreshable_drug_term
+         (id INTEGER PRIMARY KEY)
+GO
+
+/*
  * Associates a blob with a version of a document that describes it.
  * When a document associated with a blob (i.e., a blob metadata document)
  * is versioned, we create an entry in this table indicating that the
@@ -2412,6 +2421,9 @@ ALTER TABLE term_audio_mp3 ADD FOREIGN KEY(reviewer_id) REFERENCES usr
 GO
 ALTER TABLE term_audio_mp3 ADD FOREIGN KEY(zipfile_id)
  REFERENCES term_audio_zipfile
+GO
+
+ALTER TABLE unrefreshable_drug_term ADD FOREIGN KEY(id) REFERENCES all_docs
 GO
 
 ALTER TABLE version_blob_usage ADD FOREIGN KEY(blob_id) REFERENCES doc_blob
