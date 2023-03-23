@@ -13,20 +13,23 @@ OCECTS-116 - Add nct_id attribute to ProtocolRef element
 OCECDR-4511 - Remove template which adds nct_id attributes to ProtocolRefs
 
  ================================================================ -->
-<xsl:transform                xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                              xmlns:cdr = "cips.nci.nih.gov/cdr"
-                                version = "1.0">
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                               version = "1.0">
 
- <xsl:output                     method = "xml"
-                   omit-xml-declaration = "no"
-                               encoding = "UTF-8"/>
+ <xsl:output                    method = "xml"
+                  omit-xml-declaration = "no"
+                              encoding = "UTF-8"/>
 
  <xsl:include href = "cdr:name:Module: Citation Denormalization"/>
  <xsl:include href = "cdr:name:Module: Multimedia Denormalization"/>
 
- <xsl:variable                     name = "sumLanguage">
+ <xsl:param                       name = "isQC"
+                                select = "'N'"/>
+
+ <xsl:variable                    name = "sumLanguage">
   <xsl:choose>
-   <xsl:when                       test = "/Summary
+   <xsl:when                      test = "/Summary
                                            /SummaryMetaData
                                            /SummaryLanguage = 'English'">
     <xsl:text>EN</xsl:text>
@@ -649,24 +652,33 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
  Template to denormalize the Term elements
  ================================================================= -->
  <xsl:template                    match = "MiscellaneousDocLink">
-  <xsl:variable                    name = "MiscID"
+  <xsl:variable                    name = "miscID"
                                  select = "@cdr:ref"/>
-  <xsl:variable                    name = "MiscInfo"
+
+  <xsl:variable                    name = "docVersion">
+   <xsl:choose>
+    <xsl:when                      test = "$isQC = 'N'">
+     <xsl:text>/lastp</xsl:text>
+    </xsl:when>
+   </xsl:choose>
+  </xsl:variable>
+
+  <xsl:variable                    name = "miscInfo"
                                  select = "document(concat('cdr:',
-                                            cdr:escape-uri($MiscID),
-                                                           '/lastp'))"/>
-  <xsl:variable                    name = "MiscIDFrag"
-                                 select = "substring-after($MiscID, '#')"/>
+                                            cdr:escape-uri($miscID),
+                                                           $docVersion))"/>
+  <xsl:variable                    name = "miscIDFrag"
+                                 select = "substring-after($miscID, '#')"/>
 
   <xsl:element                     name = "MiscellaneousDocLink">
    <xsl:attribute                  name = "cdr:ref">
     <xsl:value-of                select = "@cdr:ref"/>
    </xsl:attribute>
 
-   <xsl:apply-templates          select = "$MiscInfo/
+   <xsl:apply-templates          select = "$miscInfo/
                                             MiscellaneousDocument/
                                             MiscellaneousDocumentText//
-                                            Section[@cdr:id = $MiscIDFrag]"/>
+                                            Section[@cdr:id = $miscIDFrag]"/>
   </xsl:element>
  </xsl:template>
 
