@@ -1172,7 +1172,10 @@ class CommandSet:
 
     def _save_client_trace_log(self, node):
         log_data = self.get_node_text(node.find("LogData"))
-        log_id = self.session.save_client_trace_log(log_data)
+        opts = {}
+        opts["user"] = self.get_node_text(node.find("User"))
+        opts["session"] = self.get_node_text(node.find("Session"))
+        log_id = self.session.save_client_trace_log(log_data, **opts)
         response = etree.Element(node.tag + "Resp")
         etree.SubElement(response, "LogId").text = str(log_id)
         return response

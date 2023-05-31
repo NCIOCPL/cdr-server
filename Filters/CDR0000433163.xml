@@ -1,12 +1,12 @@
 <?xml version="1.0" ?>
 <!-- Filter title: Media QC Report Filter -->
 <!--
- ================================================================
- Filter to create a Media Content QC Report
- Written by Volker Englisch
+================================================================
+Filter to create a Media Content QC Report
+Written by Volker Englisch
 
- OCECDR-3728: [Media] Add Permission Info to QC Report
- ================================================================ -->
+OCECDR-3728: [Media] Add Permission Info to QC Report
+================================================================ -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
                                version = "1.0"
                              xmlns:cdr = "cips.nci.nih.gov/cdr">
@@ -14,7 +14,12 @@
  <xsl:output                    method = "html"/>
 
  <xsl:include  href = "cdr:name:Module: Attribute Sets"/>
+ <xsl:include  href = "cdr:name:Module: InLine Markup Formatter"/>
  <xsl:include  href = "cdr:name:Module: QC Filter Templates"/>
+ <xsl:include  href = "cdr:name:Module: QC Filter Templates - Summary"/>
+ <xsl:include  href = "cdr:name:Module: Table Formatter"/>
+ <xsl:include  href = "cdr:name:Module: STYLE Default"/>
+ <xsl:include  href = "cdr:name:Module: STYLE RS Insertion Deletion"/>
 
  <xsl:variable                    name = "docID"
                                 select = "document('cdrutil:/docid')"/>
@@ -22,27 +27,6 @@
                                 select = "'MediaQc'"/>
  <xsl:variable                    name = "dateTime"
                                 select = "document('cdrutil:/date')"/>
-
- <xsl:attribute-set               name = "left-column">
-  <xsl:attribute                  name = "width">
-   <xsl:text>15%</xsl:text>
-  </xsl:attribute>
-  <xsl:attribute                  name = "valign">
-   <xsl:text>top</xsl:text>
-  </xsl:attribute>
-  <xsl:attribute                  name = "align">
-   <xsl:text>center</xsl:text>
-  </xsl:attribute>
- </xsl:attribute-set>
-
- <xsl:attribute-set               name = "right-column">
-  <xsl:attribute                  name = "width">
-   <xsl:text>85%</xsl:text>
-  </xsl:attribute>
-  <xsl:attribute                  name = "valign">
-   <xsl:text>top</xsl:text>
-  </xsl:attribute>
- </xsl:attribute-set>
 
  <!--
  ===============================================================
@@ -69,6 +53,12 @@
      <xsl:attribute               name = "type">
       <xsl:text>text/css</xsl:text>
      </xsl:attribute>
+     <xsl:text>
+     body          { font-family: Arial, Helvetica, sans-serif;
+                     padding: 0; }
+     .row-para .column,.row-ps .column
+                   { margin-bottom: 10px; }
+     .title-text   { font-weight: bold; }
      .label-big    { font-size: 1.1em;     /* Using 1.2m appears to big on IE */
                      font-weight: bold; 
                      margin-top: 1.0em; }  /* Using medium to small on FireFx */
@@ -95,12 +85,10 @@
                          border-collapse: collapse; }
      .language     { font-weight: bold; }
      .label
+     </xsl:text>
+     <xsl:call-template           name = "defaultStyle"/>
+     <xsl:call-template           name = "rsInsertionDeletionStyle"/>
     </xsl:element>
-   </xsl:element>
-   <xsl:element                   name = "basefont">
-    <xsl:attribute                name = "face">
-     <xsl:text>Arial, Helvetica, sans-serif</xsl:text>
-    </xsl:attribute>
    </xsl:element>
 
    <xsl:apply-templates         select = "Media"/>
@@ -115,6 +103,9 @@
  =================================================================== -->
  <xsl:template                   match = "Media">
   <xsl:element                    name = "body">
+   <xsl:attribute                 name = "class">
+    <xsl:text>report</xsl:text>
+   </xsl:attribute>
 
    <!--
    ==================================================================
@@ -140,12 +131,6 @@
    ======================================================================
    Display media title and image
    ===================================================================== -->
-   <!-- Adding a spacer -->
-   <xsl:call-template             name = "blockTitle">
-    <xsl:with-param               name = "label"
-                                select = "''"/>
-   </xsl:call-template>
-
    <xsl:call-template             name = "labelTextRow">
     <xsl:with-param               name = "label"
                                 select = "'Media Title'"/>
@@ -153,6 +138,8 @@
                                 select = "'label-big'"/>
     <xsl:with-param               name = "text"
                                 select = "MediaTitle"/>
+    <xsl:with-param               name = "textSize"
+                                select = "'bold'"/>
    </xsl:call-template>
 
    <!-- Display the image -->
@@ -174,95 +161,102 @@
     </xsl:when>
    </xsl:choose>
 
-   <!-- Display the data -->
+   <!--
+   ======================================================================
+   Display the data
+   ===================================================================== -->
    <xsl:apply-templates         select = "PhysicalMedia"/>
    <xsl:apply-templates         select = "MediaSource"/>
    <xsl:apply-templates         select = "PermissionInformation"/>
    <xsl:apply-templates         select = "MediaContent"/>
    <xsl:apply-templates         select = "ProposedUse"/>
    <xsl:apply-templates         select = "ProcessingStatuses"/>
-   <p/>
 
    <xsl:if                        test = "RelatedDocuments">
-   <table       xsl:use-attribute-sets = "table">
-    <tr>
-     <td        xsl:use-attribute-sets = "cell1of2">
-      <span class="label-big">Related Documents</span>
-     </td>
-     <td        xsl:use-attribute-sets = "cell2of2">
-      <xsl:for-each             select = "RelatedDocuments/
+    <xsl:element                  name = "table"
+                xsl:use-attribute-sets = "table">
+     <xsl:element                 name = "tr">
+      <xsl:element                name = "td"
+                xsl:use-attribute-sets = "cell1of2">
+       <xsl:element               name = "span">
+        <xsl:attribute            name = "class">
+         <xsl:text>label-big</xsl:text>
+        </xsl:attribute>
+        <xsl:text>Related Documents</xsl:text>
+       </xsl:element>
+      </xsl:element>
+      <xsl:element                name = "td"
+                xsl:use-attribute-sets = "cell2of2">
+       <xsl:for-each            select = "RelatedDocuments/
                                           SupplementaryInfoLink">
-       <li>
-        <xsl:value-of            select = "."/>
-        <xsl:text> (</xsl:text>
-        <xsl:value-of            select = "concat('CDR',
+        <xsl:element              name = "li">
+         <xsl:value-of          select = "."/>
+         <xsl:text> (</xsl:text>
+         <xsl:value-of          select = "concat('CDR',
                                            number(
                                             substring-after(
                                              substring-before(
                                               concat(@cdr:ref, '#'), '#'),
                                                      'CDR')))"/>
-        <xsl:text>)</xsl:text>
-       </li>
-      </xsl:for-each>
-     </td>
-    </tr>
-   </table>
-   <p/>
+         <xsl:text>)</xsl:text>
+        </xsl:element>
+       </xsl:for-each>
+      </xsl:element>
+     </xsl:element>
+    </xsl:element>
    </xsl:if>
 
    <xsl:if                        test = "Comment">
-    <p/>
-    <span class="label-big">Comment</span>
-    <br/>
+    <xsl:element                  name = "span">
+     <xsl:attribute               name = "class">
+      <xsl:text>label-big</xsl:text>
+     </xsl:attribute>
+     <xsl:text>Comment</xsl:text>
+    </xsl:element>
+
+    <xsl:element                  name = "br"/>
     <xsl:value-of               select = "Comment"/>
    </xsl:if>
-   <p/>
 
    <!---
    ===================================================================
    Display Date Last Modified
    =================================================================== -->
-  <xsl:call-template              name = "blockTitle">
-   <xsl:with-param                name = "label"
+   <xsl:call-template             name = "blockTitle">
+    <xsl:with-param               name = "label"
                                 select = "'Record Information'"/>
-  </xsl:call-template>
+   </xsl:call-template>
 
-   <table       xsl:use-attribute-sets = "table">
-    <xsl:for-each               select = "CdrDocCtl">
-     <tr>
-      <td       xsl:use-attribute-sets = "cell1of2">
-       <b>Created By</b>
-      </td>
-      <td       xsl:use-attribute-sets = "cell2of2">
-       <xsl:value-of            select = "Create/User"/>
-      </td>
-     </tr>
-     <tr>
-      <td       xsl:use-attribute-sets = "cell1of2">
-       <b>Date</b>
-      </td>
-      <td       xsl:use-attribute-sets = "cell2of2">
-       <xsl:value-of            select = "substring-before(Create/Date,'T')"/>
-      </td>
-     </tr>
-     <tr>
-      <td       xsl:use-attribute-sets = "cell1of2">
-       <b>Updated By</b>
-      </td>
-      <td       xsl:use-attribute-sets = "cell2of2">
-       <xsl:value-of            select = "Modify/User"/><br />
-      </td>
-     </tr>
-     <tr>
-      <td       xsl:use-attribute-sets = "cell1of2">
-       <b>Date</b>
-      </td>
-      <td       xsl:use-attribute-sets = "cell2of2">
-       <xsl:value-of            select = "substring-before(Modify/Date,'T')"/>
-      </td>
-     </tr>
-    </xsl:for-each>
-   </table>
+   <xsl:variable                  name = "created">
+    <xsl:value-of               select = "substring-before(CdrDocCtl/Create/Date,'T')"/>
+    <xsl:text>, </xsl:text>
+    <xsl:value-of               select = "CdrDocCtl/Create/User"/>
+   </xsl:variable>
+
+   <xsl:variable                  name = "updated">
+    <xsl:value-of               select = "substring-before(CdrDocCtl/Modify/Date,'T')"/>
+    <xsl:text>, </xsl:text>
+    <xsl:value-of               select = "CdrDocCtl/Modify/User"/>
+   </xsl:variable>
+
+   <xsl:call-template             name = "labelTextRow">
+    <xsl:with-param               name = "label"
+                                select = "'Created'"/>
+    <xsl:with-param               name = "labelSize"
+                                select = "'label-small'"/>
+    <xsl:with-param               name = "text"
+                                select = "$created"/>
+   </xsl:call-template>
+
+   <xsl:call-template             name = "labelTextRow">
+    <xsl:with-param               name = "label"
+                                select = "'Updated: '"/>
+    <xsl:with-param               name = "labelSize"
+                                select = "'label-small'"/>
+    <xsl:with-param               name = "text"
+                                select = "$updated"/>
+   </xsl:call-template>
+
   </xsl:element>
  </xsl:template>
 
@@ -283,11 +277,11 @@
  Template to display Physical Media Information
  ======================================================================= -->
  <xsl:template                   match = "MediaSource">
-   <!-- Adding a spacer -->
-   <xsl:call-template             name = "blockTitle">
-    <xsl:with-param               name = "label"
+  <!-- Adding a spacer -->
+  <xsl:call-template              name = "blockTitle">
+   <xsl:with-param                name = "label"
                                 select = "''"/>
-   </xsl:call-template>
+  </xsl:call-template>
 
   <xsl:call-template              name = "spanBlockTitle">
    <xsl:with-param                name = "label"
@@ -373,7 +367,7 @@
    </xsl:call-template>
   </xsl:if>
 
-  <xsl:apply-templates         select = "ApprovedUse"/>
+  <xsl:apply-templates          select = "ApprovedUse"/>
 
   <!-- Adding a spacer -->
   <xsl:call-template              name = "blockTitle">
@@ -472,231 +466,128 @@
  Template to display Physical Media Information
  ======================================================================= -->
  <xsl:template                   match = "MediaContent">
-  <p/>
   <xsl:call-template              name = "blockTitle">
    <xsl:with-param                name = "label"
                                 select = "'Media Content'"/>
   </xsl:call-template>
 
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
+                                select = "'Categories'"/>
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-small'"/>
+   <xsl:with-param                name = "text"
+                                select = "Categories/
+                                            Category"/>
+  </xsl:call-template>
+
+  <xsl:if                         test = "Diagnoses">
    <xsl:call-template             name = "labelTextRow">
     <xsl:with-param               name = "label"
-                                select = "'Categories'"/>
+                                select = "'Diagnoses'"/>
     <xsl:with-param               name = "labelSize"
                                 select = "'label-small'"/>
     <xsl:with-param               name = "text"
-                                select = "Categories/
-                                            Category"/>
-   </xsl:call-template>
-
-   <xsl:if                        test = "Diagnoses">
-    <xsl:call-template            name = "labelTextRow">
-     <xsl:with-param              name = "label"
-                                select = "'Diagnoses'"/>
-     <xsl:with-param              name = "labelSize"
-                                select = "'label-small'"/>
-     <xsl:with-param              name = "text"
                                 select = "Diagnoses/
                                             Diagnosis/
                                             Term/
                                             PreferredName"/>
-    </xsl:call-template>
-   </xsl:if>
+   </xsl:call-template>
+  </xsl:if>
 
-   <xsl:if                        test = "Topics">
-    <xsl:call-template            name = "labelTextRow">
-     <xsl:with-param              name = "label"
+  <xsl:if                         test = "Topics">
+   <xsl:call-template             name = "labelTextRow">
+    <xsl:with-param               name = "label"
                                 select = "'Topics'"/>
-     <xsl:with-param              name = "labelSize"
+    <xsl:with-param               name = "labelSize"
                                 select = "'label-small'"/>
-     <xsl:with-param              name = "text"
+    <xsl:with-param               name = "text"
                                 select = "Topics/
                                             Topic/
                                             Term/
                                             PreferredName"/>
-    </xsl:call-template>
-   </xsl:if>
+   </xsl:call-template>
+  </xsl:if>
 
-  <p/>
-
+  <!--
+  Display of ContentDescriptions
+  ====================================================================== -->
+  <xsl:element                    name = "hr"/>
   <xsl:call-template              name = "blockTitle">
    <xsl:with-param                name = "label"
-                                select = "'Content Description'"/>
+                                select = "'Content Descriptions'"/>
   </xsl:call-template>
 
-  <table        xsl:use-attribute-sets = "table">
-   <tr>
-    <table      xsl:use-attribute-sets = "table">
-     <xsl:attribute               name = "border">1</xsl:attribute>
-     <tr>
-      <th>Language</th>
-      <th>Patients</th>
-     </tr>
-     <tr>
-      <td width="15%"  valign="top" align="center">
-       <b>en</b>
-      </td>
-      <td width="85%" valign="top">
-       <xsl:value-of            select = "ContentDescriptions/
-                                          ContentDescription
-                                           [@audience='Patients'
-                                            and
-                                            @language='en']"/>
-      </td>
-     </tr>
-     <xsl:if                      test = "ContentDescriptions/
-                                          ContentDescription
-                                            [@audience='Patients'
-                                             and
-                                             @language='es']">
-      <tr>
-       <td width="15%"  valign="top" align="center">
-        <b>es</b>
-       </td>
-       <td width="85%" valign="top">
-        <xsl:value-of           select = "ContentDescriptions/
-                                          ContentDescription
-                                            [@audience='Patients'
-                                             and
-                                             @language='es']"/>
-       </td>
-      </tr>
-     </xsl:if>
-    </table>
-   </tr>
-   <xsl:if                        test = "ContentDescriptions/
-                                          ContentDescription
-                                          [@audience='Health_professionals']">
-    <tr>
-     <table     xsl:use-attribute-sets = "table">
-      <xsl:attribute              name = "border">1</xsl:attribute>
-      <tr>
-       <th>Language</th>
-       <th>Health Professional</th>
-      </tr>
-      <tr>
-       <td width="15%"  valign="top" align="center">
-        <b>en</b>
-       </td>
-       <td width="85%" valign="top">
-        <xsl:value-of           select = "ContentDescriptions/
-                                          ContentDescription
-                                            [@audience='Health_professionals'
-                                             and
-                                             @language='en']"/>
-       </td>
-      </tr>
-      <xsl:if                     test = "ContentDescriptions/
-                                          ContentDescription
-                                            [@audience='Health_professionals'
-                                             and
-                                             @language='es']">
-       <tr>
-        <td width="15%"  valign="top" align="center">
-         <b>es</b>
-        </td>
-        <td width="85%" valign="top">
-         <xsl:value-of          select = "ContentDescriptions/
-                                          ContentDescription
-                                            [@audience='Health_professionals'
-                                             and
-                                             @language='es']"/>
-        </td>
-       </tr>
-      </xsl:if>
-     </table>
-    </tr>
-   </xsl:if>
-  </table>
-  <p/>
+  <!-- 
+  Cannot pass a node-set as a parameter, so I can't use the labelTextRow
+  template when displaying insertion/deletion markup for Captions or
+  ContentDescriptions
+  ====================================================================== -->
+  <xsl:for-each                 select = "ContentDescriptions/
+                                            ContentDescription">
+   <xsl:element                   name = "div">
+    <xsl:attribute                name = "class">
+     <xsl:text>row-para</xsl:text>
+    </xsl:attribute>
+    <xsl:element                  name = "div">
+     <xsl:attribute               name = "class">
+      <xsl:text>column left</xsl:text>
+     </xsl:attribute>
+     <xsl:element                 name = "span">
+      <xsl:attribute              name = "class">
+       <xsl:value-of            select = "'label-small'"/>
+      </xsl:attribute>
+      <xsl:value-of             select = "@audience"/>
+     </xsl:element>
+    </xsl:element>
+    <xsl:element                  name = "div">
+     <xsl:attribute               name = "class">
+      <xsl:text>column right</xsl:text>
+     </xsl:attribute>
+     <xsl:apply-templates/>
+    </xsl:element>
+   </xsl:element>
+  </xsl:for-each>
 
+  <!--
+  Display of Captions
+  ====================================================================== -->
   <xsl:if                         test = "Captions">
+   <xsl:element                   name = "hr"/>
+
    <xsl:call-template             name = "blockTitle">
     <xsl:with-param               name = "label"
                                 select = "'Caption'"/>
    </xsl:call-template>
 
-   <table       xsl:use-attribute-sets = "table">
-    <tr>
-     <table     xsl:use-attribute-sets = "table">
-      <xsl:attribute              name = "border">1</xsl:attribute>
-      <tr>
-       <th>Language</th>
-       <th>Patients</th>
-      </tr>
-      <tr>
-       <td width="15%"  valign="top" align="center">
-        <b>en</b>
-       </td>
-       <td width="85%" valign="top">
-        <xsl:value-of           select = "Captions/
-                                          MediaCaption
-                                            [@audience='Patients'
-                                             and
-                                             @language='en']"/>
-       </td>
-      </tr>
-      <xsl:if                    test = "Captions/
-                                         MediaCaption
-                                           [@audience='Patients'
-                                            and
-                                            @language='es']">
-       <tr>
-        <td width="15%" valign="top" align="center">
-         <b>es</b>
-        </td>
-        <td width="85%" valign="top">
-         <xsl:value-of          select = "Captions/
-                                          MediaCaption
-                                            [@audience='Patients'
-                                             and
-                                             @language='es']"/>
-        </td>
-       </tr>
-      </xsl:if>
-     </table>
-    </tr>
-    <xsl:if                       test = "Captions/
-                                          MediaCaption
-                                            [@audience='Health_professionals']">
-     <tr>
-      <table    xsl:use-attribute-sets = "table">
-       <xsl:attribute             name = "border">1</xsl:attribute>
-       <tr>
-        <th>Language</th>
-        <th>Health Professional</th>
-       </tr>
-       <tr>
-        <td width="15%"  valign="top" align="center">
-         <b>en</b>
-        </td>
-        <td width="85%" valign="top">
-         <xsl:value-of          select = "Captions/
-                                          MediaCaption
-                                            [@audience='Health_professionals'
-                                             and
-                                             @language='en']"/>
-        </td>
-       </tr>
-       <tr>
-        <td width="15%"  valign="top" align="center">
-         <b>es</b>
-        </td>
-        <td width="85%" valign="top">
-         <xsl:value-of          select = "Captions/
-                                          MediaCaption
-                                            [@audience='Health_professionals'
-                                             and
-                                             @language='es']"/>
-        </td>
-       </tr>
-      </table>
-     </tr>
-    </xsl:if>
-   </table>
+   <xsl:for-each                select = "Captions/MediaCaption">
+    <xsl:element                  name = "div">
+     <xsl:attribute               name = "class">
+      <xsl:text>row-para</xsl:text>
+     </xsl:attribute>
+     <xsl:element                 name = "div">
+     <xsl:attribute               name = "class">
+      <xsl:text>column left</xsl:text>
+     </xsl:attribute>
+      <xsl:element                name = "span">
+       <xsl:attribute             name = "class">
+        <xsl:value-of           select = "'label-small'"/>
+       </xsl:attribute>
+       <xsl:value-of            select = "@audience"/>
+      </xsl:element>
+     </xsl:element>
+     <xsl:element                 name = "div">
+      <xsl:attribute              name = "class">
+       <xsl:text>column right</xsl:text>
+      </xsl:attribute>
+      <xsl:apply-templates/>
+     </xsl:element>
+    </xsl:element>
+   </xsl:for-each>
+
   </xsl:if>
 
   <xsl:if                         test = "Comment">
-   <p/>
    <xsl:call-template             name = "labelTextRow">
     <xsl:with-param               name = "label"
                                 select = "'Comment'"/>
@@ -717,6 +608,7 @@
                                 select = "MediaLanguage"/>
    </xsl:call-template>
   </xsl:if>
+  <xsl:element                    name = "hr"/>
  </xsl:template>
 
 
@@ -730,76 +622,49 @@
                                 select = "'Image Data'"/>
   </xsl:call-template>
 
-   <xsl:call-template             name = "labelTextRow">
-    <xsl:with-param               name = "label"
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
                                 select = "'Image Type'"/>
-    <xsl:with-param               name = "labelSize"
+   <xsl:with-param                name = "labelSize"
                                 select = "'label-small'"/>
-    <xsl:with-param               name = "text"
+   <xsl:with-param                name = "text"
                                 select = "ImageType"/>
-   </xsl:call-template>
-   <xsl:call-template             name = "labelTextRow">
-    <xsl:with-param               name = "label"
+  </xsl:call-template>
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
                                 select = "'Image Encoding'"/>
-    <xsl:with-param               name = "labelSize"
+   <xsl:with-param                name = "labelSize"
                                 select = "'label-small'"/>
-    <xsl:with-param               name = "text"
+   <xsl:with-param                name = "text"
                                 select = "ImageEncoding"/>
-   </xsl:call-template>
-   <xsl:call-template             name = "labelTextRow">
-    <xsl:with-param               name = "label"
+  </xsl:call-template>
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
                                 select = "'Color'"/>
-    <xsl:with-param               name = "labelSize"
+   <xsl:with-param                name = "labelSize"
                                 select = "'label-small'"/>
-    <xsl:with-param               name = "text"
+   <xsl:with-param                name = "text"
                                 select = "Color"/>
-   </xsl:call-template>
+  </xsl:call-template>
+  <xsl:call-template              name = "labelTextRow">
+   <xsl:with-param                name = "label"
+                                select = "'Labeled'"/>
+   <xsl:with-param                name = "labelSize"
+                                select = "'label-small'"/>
+   <xsl:with-param                name = "text"
+                                select = "Labeled"/>
+  </xsl:call-template>
+
+  <xsl:if                         test = "LabelName">
    <xsl:call-template             name = "labelTextRow">
     <xsl:with-param               name = "label"
-                                select = "'Labeled'"/>
+                                select = "'Label Name'"/>
     <xsl:with-param               name = "labelSize"
                                 select = "'label-small'"/>
     <xsl:with-param               name = "text"
-                                select = "Labeled"/>
+                                select = "LabelName"/>
    </xsl:call-template>
-
-   <xsl:if                        test = "LabelName">
-    <xsl:call-template            name = "blockTitle">
-     <xsl:with-param              name = "label"
-                                select = "'Label Name'"/>
-    </xsl:call-template>
-
-    <xsl:element                  name = "table"
-                 xsl:use-attribute-set = "table">
-     <xsl:attribute               name = "class">
-      <xsl:text>table-border</xsl:text>
-     </xsl:attribute>
-     <xsl:element                 name = "tr">
-      <xsl:element                name = "th">
-       <xsl:text>Language</xsl:text>
-      </xsl:element>
-      <xsl:element                name = "th">
-       <xsl:text>Label</xsl:text>
-      </xsl:element>
-     </xsl:element>
-
-     <xsl:for-each              select = "LabelName">
-      <xsl:sort                 select = "@language"/>
-      <xsl:element                name = "tr">
-       <xsl:element               name = "td">
-        <xsl:attribute            name = "class">
-         <xsl:text>language center</xsl:text>
-        </xsl:attribute>
-        <xsl:value-of           select = "@language"/>
-       </xsl:element>
-       <xsl:element               name = "td"
-                    use-attribute-sets = "right-column">
-        <xsl:value-of           select = "."/>
-       </xsl:element>
-      </xsl:element>
-     </xsl:for-each>
-    </xsl:element>
-   </xsl:if>
+  </xsl:if>
 
   <xsl:if                         test = "ImageDimensions/
                                           HeightPixels">
@@ -849,7 +714,6 @@
     </xsl:call-template>
    </xsl:if>
   </xsl:if>
-
  </xsl:template>
 
 
@@ -900,7 +764,6 @@
                                 select = "RunSeconds"/>
    </xsl:call-template>
   </xsl:if>
-
  </xsl:template>
 
 
@@ -942,7 +805,6 @@
                                 select = "RunSeconds"/>
    </xsl:call-template>
   </xsl:if>
-
  </xsl:template>
 
 
@@ -967,7 +829,7 @@
    </xsl:call-template>
   </xsl:if>
 
-  <xsl:if                        test = "SourcePublication">
+  <xsl:if                         test = "SourcePublication">
    <xsl:call-template             name = "labelTextRow">
     <xsl:with-param               name = "label"
                                 select = "'Source Publication'"/>
@@ -978,7 +840,7 @@
    </xsl:call-template>
   </xsl:if>
 
-  <xsl:if                        test = "DateCreated">
+  <xsl:if                         test = "DateCreated">
    <xsl:call-template             name = "labelTextRow">
     <xsl:with-param               name = "label"
                                 select = "'Date Created'"/>
@@ -989,7 +851,7 @@
    </xsl:call-template>
   </xsl:if>
 
-  <xsl:if                        test = "TextDateCreated">
+  <xsl:if                         test = "TextDateCreated">
    <xsl:call-template             name = "labelTextRow">
     <xsl:with-param               name = "label"
                                 select = "'Text Date Created'"/>
@@ -1000,7 +862,7 @@
    </xsl:call-template>
   </xsl:if>
 
-  <xsl:if                        test = "Acknowledgement">
+  <xsl:if                         test = "Acknowledgement">
    <xsl:call-template             name = "labelTextRow">
     <xsl:with-param               name = "label"
                                 select = "'Acknowledgement'"/>
@@ -1011,7 +873,7 @@
    </xsl:call-template>
   </xsl:if>
 
-  <xsl:if                        test = "SourceFilename">
+  <xsl:if                         test = "SourceFilename">
    <xsl:call-template             name = "labelTextRow">
     <xsl:with-param               name = "label"
                                 select = "'Source Filename'"/>
@@ -1022,7 +884,7 @@
    </xsl:call-template>
   </xsl:if>
 
-  <xsl:if                        test = "Comment">
+  <xsl:if                         test = "Comment">
    <xsl:call-template             name = "labelTextRow">
     <xsl:with-param               name = "label"
                                 select = "'Comment'"/>
@@ -1032,7 +894,6 @@
                                 select = "Comment"/>
    </xsl:call-template>
   </xsl:if>
-
  </xsl:template>
 
 
@@ -1102,7 +963,6 @@
                                 select = "Comment"/>
    </xsl:call-template>
   </xsl:if>
-
  </xsl:template>
 
 
@@ -1147,20 +1007,19 @@
   </xsl:call-template>
 
   <xsl:if                         test = "RequestedBy">
-  <!-- Adding a spacer -->
-  <xsl:call-template              name = "blockTitle">
-   <xsl:with-param                name = "label"
+   <!-- Adding a spacer -->
+   <xsl:call-template             name = "blockTitle">
+    <xsl:with-param               name = "label"
                                 select = "''"/>
-  </xsl:call-template>
+   </xsl:call-template>
 
-  <xsl:call-template              name = "approvedUseRow">
-   <xsl:with-param                name = "label"
+   <xsl:call-template             name = "approvedUseRow">
+    <xsl:with-param               name = "label"
                                 select = "'Requested By'"/>
-   <xsl:with-param                name = "labelSize"
+    <xsl:with-param               name = "labelSize"
                                 select = "'label-small'"/>
-  </xsl:call-template>
+   </xsl:call-template>
   </xsl:if>
-
  </xsl:template>
 
 
@@ -1175,57 +1034,42 @@
                                 select = "'Processing Statuses'"/>
   </xsl:call-template>
 
-  <table xsl:use-attribute-sets = "table">
-   <xsl:attribute name="border">1</xsl:attribute>
-   <tr>
-    <th width="15%" valign="top" align="left">
-     <b>Status Date</b>
-    </th>
-    <th width="60%" valign="top" align="left">
-     <b>Status Value</b>
-    </th>
-    <th valign="top" align="left">
-     <b>Entered By</b>
-    </th>
-   </tr>
-  <xsl:apply-templates          select = "ProcessingStatus"/>
-  </table>
- </xsl:template>
+  <xsl:for-each                 select = "ProcessingStatus">
+   <xsl:element                   name = "div">
+    <xsl:attribute                name = "class">
+     <xsl:text>row-ps</xsl:text>
+    </xsl:attribute>
 
- <!--
- =======================================================================
- Template to display the Processing Status Information
- ======================================================================= -->
- <xsl:template                   match = "ProcessingStatus">
-   <tr>
-    <td >
-     <xsl:value-of              select = "ProcessingStatusDate"/>
-    </td>
-    <td>
+    <xsl:element                  name = "div">
+     <xsl:attribute               name = "class">
+      <xsl:text>column left</xsl:text>
+     </xsl:attribute>
+
+     <xsl:element                 name = "span">
+      <xsl:attribute              name = "class">
+       <xsl:value-of            select = "'label-small'"/>
+      </xsl:attribute>
+      <xsl:value-of             select = "ProcessingStatusDate"/>
+     </xsl:element>
+    </xsl:element>
+
+    <xsl:element                  name = "div">
+     <xsl:attribute               name = "class">
+      <xsl:text>column right</xsl:text>
+     </xsl:attribute>
      <xsl:value-of              select = "ProcessingStatusValue"/>
-    </td>
-    <td>
-     <xsl:value-of              select = "EnteredBy"/>
-    </td>
-   </tr>
-   <xsl:if                        test = "Comment">
-    <tr>
-     <td> </td>
-     <td valign="top" align="left" colspan="2">
-      <table    xsl:use-attribute-sets = "table">
-       <tr>
-        <td width="15%" valign="top" align="left">
-         <i>Comments</i>
-         <xsl:text>: </xsl:text>
-        </td>
-        <td valign="top" align="left">
-         <xsl:value-of          select = "Comment"/>
-        </td>
-       </tr>
-      </table>
-     </td>
-    </tr>
-   </xsl:if>
+    <xsl:text> (</xsl:text>
+    <xsl:value-of               select = "EnteredBy"/>
+    <xsl:text>)</xsl:text>
+
+     <xsl:for-each              select = "Comment">
+      <xsl:element                name = "br"/>
+      <xsl:text>Comment: </xsl:text>
+      <xsl:value-of             select = "."/>
+     </xsl:for-each>
+    </xsl:element>
+   </xsl:element>
+  </xsl:for-each>
  </xsl:template>
 
 
@@ -1282,28 +1126,28 @@
   <xsl:element                    name = "a">
    <xsl:attribute                 name = "href">
     <xsl:choose>
-    <xsl:when                     test = "../Summary/KeyPoints = 'Yes'
+     <xsl:when                    test = "../Summary/KeyPoints = 'Yes'
                                           or
                                           ../Summary/SummaryAudience
                                                                = 'Patients'">
-    <!-- Create QC Report for Reformatted Patient Summaries
-    ======================================================= -->
-    <xsl:value-of               select = "concat('/cgi-bin/cdr/QcReport.py',
+     <!-- Create QC Report for Reformatted Patient Summaries
+     ======================================================= -->
+     <xsl:value-of              select = "concat('/cgi-bin/cdr/QcReport.py',
                                                  '?Session=guest',
                                                  '&amp;ReportType=pat',
                                                  '&amp;DocId=',
                                                  $cdrId)"/>
-    </xsl:when>
-    <xsl:otherwise>
-    <!-- Create QC Report for all other document types
-    ======================================================= -->
-    <xsl:value-of               select = "concat('/cgi-bin/cdr/QcReport.py',
+     </xsl:when>
+     <xsl:otherwise>
+     <!-- Create QC Report for all other document types
+     ======================================================= -->
+     <xsl:value-of              select = "concat('/cgi-bin/cdr/QcReport.py',
                                                  '?Session=guest',
                                                  '&amp;ReportType=rs',
                                                  '&amp;DocId=',
                                                  $cdrId)"/>
-    </xsl:otherwise>
-   </xsl:choose>
+     </xsl:otherwise>
+    </xsl:choose>
    </xsl:attribute>
    <xsl:value-of                select = "$cdrId"/>
   </xsl:element>
@@ -1313,6 +1157,7 @@
   </xsl:if>
   <xsl:text>)</xsl:text>
  </xsl:template>
+
 
  <!--
  ======================================================================
@@ -1354,6 +1199,7 @@
   <xsl:param                      name = "label"/>
   <xsl:param                      name = "labelSize"/>
   <xsl:param                      name = "text"/>
+  <xsl:param                      name = "textSize"/>
   <xsl:param                      name = "addThis"/>
 
    <xsl:element                   name = "div">
@@ -1374,47 +1220,37 @@
     <xsl:element                  name = "div">
      <xsl:attribute               name = "class">
       <xsl:text>column right</xsl:text>
+      <xsl:if                     test = "$textSize = 'bold'">
+       <xsl:text> title-text</xsl:text>
+      </xsl:if>
      </xsl:attribute>
 
      <!-- Multiple entries should always be displayed as a bulleted list -->
      <xsl:choose>
       <xsl:when                   test = "count($text) = 1">
        <xsl:value-of            select = "$text"/>
-       <xsl:if                   test = "$addThis">
-        <xsl:value-of          select = "concat(' (CDR',
+       <xsl:if                    test = "$addThis">
+        <xsl:value-of           select = "concat(' (CDR',
                                             number(
                                               substring-after($addThis, 'CDR')), ')')"/>
-        <xsl:apply-templates   select = "@cdr:ref"/>
+        <xsl:apply-templates    select = "@cdr:ref"/>
        </xsl:if>
       </xsl:when>
       <xsl:otherwise>
        <xsl:element               name = "ul">
-        <xsl:for-each              select = "$text">
+        <xsl:for-each           select = "$text">
          <xsl:element             name = "li">
-          <xsl:value-of             select = "."/>
-          <!--
-          <xsl:if                 test = "not(position() = last())">
-           <xsl:element               name = "br"/>
-          </xsl:if>
-          -->
+          <xsl:value-of         select = "."/>
          </xsl:element>
         </xsl:for-each>
        </xsl:element>
       </xsl:otherwise>
      </xsl:choose>
 
-     <!--
-     <xsl:for-each              select = "$text">
-      <xsl:value-of             select = "."/>
-      <xsl:if                     test = "count($text) > 1">
-       <xsl:element               name = "br"/>
-      </xsl:if>
-     </xsl:for-each>
-     -->
-
     </xsl:element>
    </xsl:element>
  </xsl:template>
+
 
  <!--
  ======================================================================
