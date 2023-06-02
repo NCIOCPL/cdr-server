@@ -64,6 +64,29 @@ OCECDR-4123: Add HP/Patient URL to Summaries
                                 select = "/Summary/@SVPC"/>
  <xsl:variable                    name = "isPartnerDoc"
                                 select = "/Summary/@PartnerMergeSet"/>
+ <!-- Identifying a faux partner document -->
+ <!--
+ In Q2 2023 a test had been implemented to find out if SVPC documents
+ could be created outside of the CDR. A partner document still had
+ to be created manually by merging the content of the external SVPCs.
+
+ This special document to be prepared for partner export only was
+ not a combination of multiple SVPCs but a single document marked
+ as PartnerMergeSet (because it's not pushed to Cancer.gov).
+ We're identifying here is a PartnerMergeSet document is in fact
+ merging multiple SVPC documents. If that's not the case this
+ partner document is a "special case" or "faux" partner doc.
+ ================================================================== -->
+ <xsl:variable                    name = "hasSVPCModuleLinks">
+  <xsl:choose>
+   <xsl:when                      test = "count(/Summary/ModuleExtra) &gt; 0">
+    <xsl:text>Y</xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text></xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:variable>
 
  <!--
  Variables needed to identify display of certain misc documents based on
@@ -352,12 +375,21 @@ OCECDR-4123: Add HP/Patient URL to Summaries
    such node for each imported summary.
    The SummarySection hierarchy has to be modified for those
    imported documents when we're processing partner documents.
+
+   A faux partner doc is handled like a regular summary here.
    ============================================================== -->
    <xsl:choose>
-    <xsl:when                     test = "$isPartnerDoc">
+    <xsl:when                     test = "$isPartnerDoc
+                                          and
+                                          $hasSVPCModuleLinks = 'Y'">
      <xsl:apply-templates       select = "ModuleExtra"/>
     </xsl:when>
     <xsl:otherwise>  <!-- for SVPC and legacy PDQ documents -->
+       <!--
+       <xsl:element name = "volker">
+        <xsl:text>NO PARTNER</xsl:text>
+       </xsl:element>
+       -->
      <xsl:apply-templates       select = "SummarySection"/>
     </xsl:otherwise>
    </xsl:choose>
@@ -490,7 +522,9 @@ OCECDR-4123: Add HP/Patient URL to Summaries
 
    <xsl:choose>
     <!-- Select that latest date between all SVPC summaries -->
-    <xsl:when                     test = "$isPartnerDoc">
+    <xsl:when                     test = "$isPartnerDoc
+                                          and
+                                          $hasSVPCModuleLinks = 'Y'">
      <xsl:call-template           name = "getDateLastModified"/>
     </xsl:when>
     <xsl:otherwise>
@@ -1275,7 +1309,9 @@ LEFT OUTER JOIN query_term_pub m
    <xsl:apply-templates         select = "SummaryDescription"
                                   mode = "copy"/>
    <xsl:choose>
-    <xsl:when                     test = "$isPartnerDoc">
+    <xsl:when                     test = "$isPartnerDoc
+                                          and
+                                          $hasSVPCModuleLinks = 'Y'">
      <xsl:apply-templates       select = "//ModuleExtra[1]/
                                              SummaryURL"/>
     </xsl:when>
