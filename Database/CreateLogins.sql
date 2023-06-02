@@ -477,6 +477,8 @@ GRANT SELECT ON pdq_contact          TO CdrGuest
 GRANT SELECT ON glossifier           TO CdrGuest
 GRANT SELECT ON api_request          TO CdrGuest
 GRANT SELECT ON session_log          TO CdrGuest
+GRANT SELECT ON dll_trace_log        TO CdrGuest
+GRANT SELECT ON client_trace_log     TO CdrGuest
 GO
 GRANT SELECT ON data_partner_notification TO CdrGuest
 GRANT SELECT ON data_partner_notification TO CdrPublishing
@@ -488,3 +490,4 @@ GRANT SELECT ON media_translation_state TO CdrGuest
 GRANT SELECT ON media_translation_job TO CdrGuest
 GRANT SELECT ON media_translation_job_history TO CdrGuest
 GRANT SELECT ON summary_translation_job_attachment TO CdrGuest
+GRANT SELECT ON unrefreshable_drug_term TO CdrGuest
