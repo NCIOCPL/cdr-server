@@ -36,13 +36,26 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
   <xsl:variable                   name = 'moduleID'
                                 select = "ancestor::SummaryFragmentRef
                                                             /@cdr:href"/>
+  <xsl:variable                   name = 'miscdocID'
+                                select = "substring-before(
+                                            ancestor::MiscellaneousDocLink/@cdr:ref,
+                                            '#')"/>
   <!-- xsl:text> [</xsl:text -->
   <!-- Display a number but don't create a link -->
   <xsl:choose>
    <xsl:when                      test = "@Target">
     <xsl:choose>
+     <!-- Process table number from SummaryModule -->
      <xsl:when                    test = "substring-before(@Target, '#')
                                                             = /Summary/DocId">
+      <xsl:variable               name = "refTableFrag"
+                                select = "substring-after(@Target, '#')"/>
+      <xsl:value-of             select = "//Table[@cdr:id = $refTableFrag]
+                                          /Title/TableNumber/@tableNumber"/>
+     </xsl:when>
+     <!-- Process table number from MiscDocument -->
+     <xsl:when                    test = "substring-before(@Target, '#')
+                                                            = $miscdocID">
       <xsl:variable               name = "refTableFrag"
                                 select = "substring-after(@Target, '#')"/>
       <xsl:value-of             select = "//Table[@cdr:id = $refTableFrag]
