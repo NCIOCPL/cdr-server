@@ -13,20 +13,23 @@ OCECTS-116 - Add nct_id attribute to ProtocolRef element
 OCECDR-4511 - Remove template which adds nct_id attributes to ProtocolRefs
 
  ================================================================ -->
-<xsl:transform                xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                              xmlns:cdr = "cips.nci.nih.gov/cdr"
-                                version = "1.0">
+<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                               version = "1.0">
 
- <xsl:output                     method = "xml"
-                   omit-xml-declaration = "no"
-                               encoding = "UTF-8"/>
+ <xsl:output                    method = "xml"
+                  omit-xml-declaration = "no"
+                              encoding = "UTF-8"/>
 
  <xsl:include href = "cdr:name:Module: Citation Denormalization"/>
  <xsl:include href = "cdr:name:Module: Multimedia Denormalization"/>
 
- <xsl:variable                     name = "sumLanguage">
+ <xsl:param                       name = "isQC"
+                                select = "'N'"/>
+
+ <xsl:variable                    name = "sumLanguage">
   <xsl:choose>
-   <xsl:when                       test = "/Summary
+   <xsl:when                      test = "/Summary
                                            /SummaryMetaData
                                            /SummaryLanguage = 'English'">
     <xsl:text>EN</xsl:text>
@@ -649,24 +652,118 @@ SELECT s.doc_id AS 'Summary-ID', s.int_val AS 'Person-ID',
  Template to denormalize the Term elements
  ================================================================= -->
  <xsl:template                    match = "MiscellaneousDocLink">
-  <xsl:variable                    name = "MiscID"
+  <xsl:variable                    name = "miscID"
                                  select = "@cdr:ref"/>
-  <xsl:variable                    name = "MiscInfo"
+
+  <xsl:variable                    name = "docVersion">
+   <xsl:choose>
+    <xsl:when                      test = "$isQC = 'N'">
+     <xsl:text>/lastp</xsl:text>
+    </xsl:when>
+   </xsl:choose>
+  </xsl:variable>
+
+  <xsl:variable                    name = "miscInfo"
                                  select = "document(concat('cdr:',
-                                            cdr:escape-uri($MiscID),
-                                                           '/lastp'))"/>
-  <xsl:variable                    name = "MiscIDFrag"
-                                 select = "substring-after($MiscID, '#')"/>
+                                            cdr:escape-uri($miscID),
+                                                           $docVersion))"/>
+  <xsl:variable                    name = "miscIDFrag"
+                                 select = "substring-after($miscID, '#')"/>
+
   <xsl:element                     name = "MiscellaneousDocLink">
    <xsl:attribute                  name = "cdr:ref">
     <xsl:value-of                select = "@cdr:ref"/>
    </xsl:attribute>
 
-   <xsl:copy-of                  select = "$MiscInfo/
+   <xsl:apply-templates          select = "$miscInfo/
                                             MiscellaneousDocument/
                                             MiscellaneousDocumentText//
-                                            Section[@cdr:id = $MiscIDFrag]"/>
+                                            Section[@cdr:id = $miscIDFrag]"/>
   </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Template to denormalize the Section element within a
+ MiscDocument.
+ ================================================================== -->
+ <xsl:template                    match = "Section">
+  <xsl:element                     name = "{name()}">
+   <xsl:attribute                  name = "cdr:id">
+    <xsl:value-of                select = "concat('_md', @cdr:id)"/>
+   </xsl:attribute>
+
+   <xsl:apply-templates          select = "node()"
+                                   mode = "miscdoc">
+    <xsl:with-param                name = "md_id"
+                                 select = "'_md'"/>
+   </xsl:apply-templates>
+
+   </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ =================================================================
+ Template to convert the cdr:id value for all elements of the
+ MiscDocument. cdr:id values need to be unique within a summary
+ document, so we're adding "_md" as a prefix.
+ ================================================================= -->
+ <xsl:template                    match = "Para | Table |
+                                           ItemizedList | OrderedList |
+                                           MediaLink | QandASet | PlaceHolder"
+                                   mode = "miscdoc">
+  <xsl:param                       name = "md_id"/>
+  <xsl:element                     name = "{name()}">
+   <xsl:for-each                 select = "@*">
+    <xsl:choose>
+     <xsl:when                     test = "name() = 'cdr:id'">
+      <xsl:attribute               name = "cdr:id">
+       <xsl:value-of             select = "$md_id"/>
+       <xsl:value-of             select = "."/>
+      </xsl:attribute>
+     </xsl:when>
+     <xsl:otherwise>
+      <xsl:attribute               name = "{name()}">
+       <xsl:value-of             select = "."/>
+      </xsl:attribute>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:for-each>
+
+   <xsl:apply-templates/>
+
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ =================================================================
+ Drop the Title element from the Misc. Doc Section. The title is
+ provided by the Summary document where needed.
+ ================================================================= -->
+ <xsl:template                    match = "Section/Title"
+                                   mode = "miscdoc">
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Template rule used to do XML to XML transformations which
+ copies any attribute node, or node that is child of of something
+ This rule is applied only to the mode='miscdoc'.
+ ================================================================== -->
+ <xsl:template                    match = "@*|node()"
+                                   mode = "miscdoc">
+  <xsl:param                       name = "md_id"/>
+  <xsl:copy>
+   <xsl:apply-templates          select = "@*|node()"
+                                   mode = "miscdoc">
+    <xsl:with-param                name = "md_id"
+                                 select = "'_md'"/>
+   </xsl:apply-templates>
+  </xsl:copy>
  </xsl:template>
 
 

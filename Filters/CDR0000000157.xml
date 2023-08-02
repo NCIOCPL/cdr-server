@@ -64,19 +64,64 @@ OCECDR-4123: Add HP/Patient URL to Summaries
                                 select = "/Summary/@SVPC"/>
  <xsl:variable                    name = "isPartnerDoc"
                                 select = "/Summary/@PartnerMergeSet"/>
+ <xsl:variable                    name = "CreatedInDrupal">
+  <xsl:choose>
+   <xsl:when                      test = "/Summary/@SVPC
+                                          and
+                                          /Summary/@ModuleOnly">
+    <xsl:text>Yes</xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>No</xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:variable>
+
  <!-- Identifying a faux partner document -->
  <!--
  In Q2 2023 a test had been implemented to find out if SVPC documents
- could be created outside of the CDR. A partner document still had
- to be created manually by merging the content of the external SVPCs.
+ could be created outside of the CDR (inside Drupal). A partner document
+ still had to be created manually by merging the content of the external
+ SVPCs into that partner document.
 
- This special document to be prepared for partner export only was
- not a combination of multiple SVPCs but a single document marked
- as PartnerMergeSet (because it's not pushed to Cancer.gov).
- We're identifying here is a PartnerMergeSet document is in fact
- merging multiple SVPC documents. If that's not the case this
- partner document is a "special case" or "faux" partner doc.
+ This special document to be prepared for the partner export was
+ not a combination of multiple SVPCs (pulled in via SummaryModuleLinks)
+ but a single document marked as PartnerMergeSet (these documents are not
+ pushed to Cancer.gov).
+ We're identifying here if a PartnerMergeSet document is in fact
+ merging multiple SVPC documents. ParternMergeSet documents build by
+ importing multiple module summaries are "real" partner/SVPC document sets.
+ If the partner document doesn't contain SummaryModuleLinks then we're
+ dealing with a "faux" partner document, one that's pulled from Cancer.gov
+ that is still publishing the old legacy data to the partners but nothing to
+ Cancer.gov. Therefore, the rule is:
+ PartnerMergeSet but doesn't include SummaryModuleLink ==> faux partner document
+
+ In Q3 2023, the test had been modified.
+ SVPC documents originate in Drupal but will be backported into the CDR.
+ These backported documents should never be published to Cancer.gov on their
+ own and will need to be marked as ModuleOnly documents.
+ The partner document, however, will include these documents to build the
+ new, updated version of the partner doc under its legacy CDR-ID.
+
+ With this we have now 4 paths for processing partner documents:
+ - legacy patient summaries
+ - partner documents build with SVPCs that are published to CG
+ - partner documents build with SVPCs that came from Drupal
+ - partner documents removed from CG and published with its legacy content
  ================================================================== -->
+ <xsl:variable                   name = "hasSVPCModule">
+  <xsl:choose>
+   <xsl:when                     test = "count(/Summary/ModuleExtra/@SVPC) &gt; 0">
+    <xsl:text>Yes</xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>No</xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:variable>
+
+ <!--
  <xsl:variable                    name = "hasSVPCModuleLinks">
   <xsl:choose>
    <xsl:when                      test = "count(/Summary/ModuleExtra) &gt; 0">
@@ -87,6 +132,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
    </xsl:otherwise>
   </xsl:choose>
  </xsl:variable>
+ -->
 
  <!--
  Variables needed to identify display of certain misc documents based on
@@ -381,7 +427,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
    <xsl:choose>
     <xsl:when                     test = "$isPartnerDoc
                                           and
-                                          $hasSVPCModuleLinks = 'Y'">
+                                          $hasSVPCModule = 'Yes'">
      <xsl:apply-templates       select = "ModuleExtra"/>
     </xsl:when>
     <xsl:otherwise>  <!-- for SVPC and legacy PDQ documents -->
@@ -524,7 +570,7 @@ OCECDR-4123: Add HP/Patient URL to Summaries
     <!-- Select that latest date between all SVPC summaries -->
     <xsl:when                     test = "$isPartnerDoc
                                           and
-                                          $hasSVPCModuleLinks = 'Y'">
+                                          $hasSVPCModule = 'Yes'">
      <xsl:call-template           name = "getDateLastModified"/>
     </xsl:when>
     <xsl:otherwise>
@@ -1311,7 +1357,7 @@ LEFT OUTER JOIN query_term_pub m
    <xsl:choose>
     <xsl:when                     test = "$isPartnerDoc
                                           and
-                                          $hasSVPCModuleLinks = 'Y'">
+                                          $hasSVPCModule = 'Yes'">
      <xsl:apply-templates       select = "//ModuleExtra[1]/
                                              SummaryURL"/>
     </xsl:when>
@@ -2614,7 +2660,43 @@ LEFT OUTER JOIN query_term_pub m
  <!--
  ====================================================================
  Templates needed for Table display
+ The first one for tables within Misc. Documents
  ==================================================================== -->
+ <xsl:template                   match = "Table"
+                                  mode = "MiscText">
+  <xsl:element                    name = "{name()}">
+   <xsl:attribute                 name = "id">
+    <xsl:value-of               select = "./@cdr:id"/>
+   </xsl:attribute>
+   <xsl:if                        test = "./@ColSep">
+    <xsl:attribute                name = "ColSep">
+      <xsl:value-of             select = "./@ColSep"/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:if                        test = "./@Frame">
+    <xsl:attribute                name = "Frame">
+     <xsl:value-of              select = "./@Frame"/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:if                        test = "./@RowSep">
+    <xsl:attribute                name = "RowSep">
+     <xsl:value-of              select = "./@RowSep"/>
+    </xsl:attribute>
+   </xsl:if>
+   <xsl:if                        test = "./@TabStyle">
+    <xsl:attribute                name = "TabStyle">
+     <xsl:value-of              select = "./@TabStyle"/>
+    </xsl:attribute>
+   </xsl:if>
+
+   <xsl:call-template            name = "listDevicesAttribute"/>
+
+   <xsl:apply-templates/>
+
+  </xsl:element>
+ </xsl:template>
+
+
  <!--
  ====================================================================
  Create the Table template including the renamed attribute for

@@ -36,15 +36,29 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
   <xsl:variable                   name = 'moduleID'
                                 select = "ancestor::SummaryFragmentRef
                                                             /@cdr:href"/>
-  <!-- xsl:text> [</xsl:text -->
+  <xsl:variable                   name = 'miscdocID'
+                                select = "substring-before(
+                                            ancestor::MiscellaneousDocLink/@cdr:ref,
+                                            '#')"/>
   <!-- Display a number but don't create a link -->
+
   <xsl:choose>
    <xsl:when                      test = "@Target">
     <xsl:choose>
+     <!-- Process table number from SummaryModule -->
      <xsl:when                    test = "substring-before(@Target, '#')
                                                             = /Summary/DocId">
       <xsl:variable               name = "refTableFrag"
                                 select = "substring-after(@Target, '#')"/>
+      <xsl:value-of             select = "//Table[@cdr:id = $refTableFrag]
+                                          /Title/TableNumber/@tableNumber"/>
+     </xsl:when>
+     <!-- Process table number from MiscDocument -->
+     <xsl:when                    test = "substring-before(@Target, '#')
+                                                            = $miscdocID">
+      <xsl:variable               name = "refTableFrag"
+                                select = "concat('_md',
+                                           substring-after(@Target, '#'))"/>
       <xsl:value-of             select = "//Table[@cdr:id = $refTableFrag]
                                           /Title/TableNumber/@tableNumber"/>
      </xsl:when>
@@ -68,13 +82,9 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
                                                          '#')"/>
       <xsl:value-of             select = "//Table[@cdr:id = $refTableFrag]
                                           /Title/TableNumber/@tableNumber"/>
-      <!-- xsl:value-of             select = "$refTableFrag"/ -->
      </xsl:when>
      <!-- Linking from module to table within the module -->
      <xsl:otherwise>
-      <!--xsl:variable               name = "refTableFrag"
-                                select = "substring-after(../../@cdr:href,
-                                                         '#')"/-->
       <xsl:variable               name = "refTableFrag"
                                 select = "concat('_sm_',
                                             translate($moduleID, '#', ''))"/>
@@ -86,7 +96,6 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
    </xsl:otherwise>
   </xsl:choose>
 
-  <!-- xsl:text>] </xsl:text -->
  </xsl:template>
 
 
@@ -105,15 +114,28 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
   <xsl:variable                   name = 'moduleID'
                                 select = "ancestor::SummaryFragmentRef
                                                              /@cdr:href"/>
-  <!-- xsl:text> [</xsl:text -->
+  <xsl:variable                   name = 'miscdocID'
+                                select = "substring-before(
+                                            ancestor::MiscellaneousDocLink/@cdr:ref,
+                                            '#')"/>
   <!-- Display a number but don't create a link -->
   <xsl:choose>
    <xsl:when                      test = "@Target">
     <xsl:choose>
+     <!-- Process table number from SummaryModule -->
      <xsl:when                    test = "substring-before(@Target, '#')
                                                             = /Summary/DocId">
       <xsl:variable               name = "refFigureFrag"
                                 select = "substring-after(@Target, '#')"/>
+      <xsl:value-of             select = "//MediaLink[@cdr:id = $refFigureFrag]
+                                          /Caption/FigureNumber/@figureNumber"/>
+     </xsl:when>
+     <!-- Process table number from MiscDocument -->
+     <xsl:when                    test = "substring-before(@Target, '#')
+                                                            = $miscdocID">
+      <xsl:variable               name = "refFigureFrag"
+                                select = "concat('_md',
+                                           substring-after(@Target, '#'))"/>
       <xsl:value-of             select = "//MediaLink[@cdr:id = $refFigureFrag]
                                           /Caption/FigureNumber/@figureNumber"/>
      </xsl:when>
@@ -149,7 +171,6 @@ BZIssue::5097 - [Summaries] Modifications to Publishing Filter to
    </xsl:otherwise>
   </xsl:choose>
 
-  <!-- xsl:text>] </xsl:text -->
  </xsl:template>
 
 
