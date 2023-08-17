@@ -1,10 +1,13 @@
 <?xml version="1.0" ?>
+<!-- File name:    CDR0000000154.xml      -->
 <!-- Filter title: Miscellaneous Document Report Filter -->
+<!-- ================================================== -->
 <xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                               version = "1.0"
-                             xmlns:cdr = "cips.nci.nih.gov/cdr">
+                             xmlns:cdr = "cips.nci.nih.gov/cdr"
+                               version = "1.0">
 
  <xsl:include   href = "cdr:name:Module: QC Filter Templates - Summary"/>
+ <xsl:include   href = "cdr:name:Module: Citation Formatting"/>
  <xsl:include   href = "cdr:name:Module: InLine Markup Formatter"/>
  <xsl:include   href = "cdr:name:Module: Table Formatter"/>
  <xsl:include   href = "cdr:name:Module: STYLE Default"/>
@@ -222,6 +225,27 @@
 
  <!--
  ==================================================================
+ Display the LOERef link
+ ================================================================== -->
+ <xsl:template                   match = "LOERef">
+  <xsl:element                    name = "a">
+   <xsl:attribute                 name = "href">
+    <xsl:value-of               select = "concat('/cgi-bin/cdr/QcReport.py?',
+                                                 'DocId=', @cdr:href,
+                                                 '&amp;DocVersion=-1',
+                                                 '&amp;Session=guest')"/>
+   </xsl:attribute>
+   <xsl:attribute                 name = "target">
+    <xsl:text>_blank</xsl:text>
+   </xsl:attribute>
+
+   <xsl:value-of                select = "."/>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
  Display DateLastModified
  ================================================================== -->
  <xsl:template                   match = "DateLastModified">
@@ -238,6 +262,31 @@
     </td>
    </tr>
   </table>
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Display Citation
+ ================================================================== -->
+ <xsl:template                   match = "Citation">
+  <xsl:element name = "strong">
+  <xsl:text>[**</xsl:text>
+   <!-- xsl:value-of   select = "."/ -->
+  <xsl:text>]</xsl:text>
+  </xsl:element>
+ </xsl:template>
+
+
+ <!--
+ ==================================================================
+ Display placeholder for TableNumber, ReferencedTableNumber
+ ================================================================== -->
+ <xsl:template                   match = "TableNumber |
+                                          FigureNumber |
+                                          ReferencedTableNumber |
+                                          ReferencedFigureNumber">
+  <xsl:text>[#]</xsl:text>
  </xsl:template>
 
 
