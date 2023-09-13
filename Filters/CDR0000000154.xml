@@ -268,12 +268,42 @@
  <!--
  ==================================================================
  Display Citation
+ Misc. Documents are included within Summary documents and the
+ Citation numbering/sorting/deduping is done as part of the Summary
+ filters.  However, the users requested citations to be displayed
+ "just like in a summary" with a sequence number in brackets, for
+ example: [5]
+ Only minimal insertion/deletion markup (approved) is applied.
  ================================================================== -->
  <xsl:template                   match = "Citation">
   <xsl:element name = "strong">
-  <xsl:text>[**</xsl:text>
-   <!-- xsl:value-of   select = "."/ -->
-  <xsl:text>]</xsl:text>
+  <xsl:choose>
+   <xsl:when                      test = "@InsertionOrDeletion = 'Insertion'">
+    <xsl:element                  name = "span">
+     <xsl:attribute               name = "class">
+      <xsl:text>insertapproved</xsl:text>
+     </xsl:attribute>
+     <xsl:text>[</xsl:text>
+     <xsl:number                 level = "any"/>
+     <xsl:text>]</xsl:text>
+    </xsl:element>
+   </xsl:when>
+   <xsl:when                      test = "@InsertionOrDeletion = 'Deletion'">
+    <xsl:element                  name = "span">
+     <xsl:attribute               name = "class">
+      <xsl:text>deleteapproved</xsl:text>
+     </xsl:attribute>
+     <xsl:text>[</xsl:text>
+     <xsl:number                 level = "any"/>
+     <xsl:text>]</xsl:text>
+    </xsl:element>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>[</xsl:text>
+     <xsl:number                 level = "any"/>
+    <xsl:text>]</xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
   </xsl:element>
  </xsl:template>
 
