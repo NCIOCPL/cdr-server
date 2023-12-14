@@ -747,18 +747,6 @@ OCECDR-4123: Add HP/Patient URL to Summaries
     </xsl:attribute>
    </xsl:if>
 
-   <!-- I don't think the template listDevicesAttribute is still in use (VE) -->
-   <xsl:choose>
-    <xsl:when                     test = "not(@IncludedDevices)
-                                         and
-                                         not(@ExcludedDevices)">
-
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:call-template           name = "listDevicesAttribute"/>
-    </xsl:otherwise>
-   </xsl:choose>
-
    <xsl:apply-templates         select = "*"/>
   </xsl:element>
  </xsl:template>
@@ -826,22 +814,6 @@ OCECDR-4123: Add HP/Patient URL to Summaries
      <xsl:value-of              select = "./@cdr:id"/>
     </xsl:attribute>
    </xsl:if>
-   <xsl:choose>
-    <xsl:when                     test = "(SectMetaData/
-                                         SectionType = 'Changes to summary'
-                                         or
-                                         SectMetaData/
-                                         SectionType = 'Current clinical trials')
-                                         and
-                                         not(@IncludedDevices)
-                                         and
-                                         not(@ExcludedDevices)">
-
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:call-template           name = "listDevicesAttribute"/>
-    </xsl:otherwise>
-   </xsl:choose>
 
    <!-- For a partner document all top-level sections must include a section title.
         If the section is of type "Introductory Text" it may not include
@@ -1606,7 +1578,6 @@ LEFT OUTER JOIN query_term_pub m
     <xsl:attribute                name = "id">
      <xsl:value-of              select = "./@cdr:id"/>
     </xsl:attribute>
-    <xsl:call-template            name = "listDevicesAttribute"/>
     <xsl:apply-templates/>
    </xsl:element>
   </xsl:if>
@@ -1643,7 +1614,6 @@ LEFT OUTER JOIN query_term_pub m
          <xsl:value-of          select = "concat($miscDocId,
                                           substring(./@cdr:id, 7))"/>
         </xsl:attribute>
-        <xsl:call-template        name = "listDevicesAttribute"/>
         <xsl:apply-templates    select = "Para"
                                   mode = "copy"/>
         <xsl:apply-templates>
@@ -1660,7 +1630,6 @@ LEFT OUTER JOIN query_term_pub m
          <xsl:value-of          select = "concat($miscDocId,
                                           substring(./@cdr:id, 7))"/>
         </xsl:attribute>
-        <xsl:call-template        name = "listDevicesAttribute"/>
         <xsl:apply-templates    select = "Para"
                                   mode = "copy"/>
         <xsl:apply-templates>
@@ -1679,7 +1648,6 @@ LEFT OUTER JOIN query_term_pub m
       <xsl:attribute              name = "id">
        <xsl:value-of            select = "concat($miscDocId, ./@cdr:id)"/>
       </xsl:attribute>
-      <xsl:call-template          name = "listDevicesAttribute"/>
       <xsl:apply-templates      select = "Para"
                                   mode = "copy"/>
       <xsl:apply-templates>
@@ -1701,7 +1669,6 @@ LEFT OUTER JOIN query_term_pub m
                                   mode = "trialSearch">
   <xsl:if                         test = "normalize-space(.)">
    <xsl:element                   name = "{name()}">
-    <xsl:call-template            name = "listDevicesAttribute"/>
     <xsl:apply-templates/>
    </xsl:element>
   </xsl:if>
@@ -1770,38 +1737,9 @@ LEFT OUTER JOIN query_term_pub m
      <xsl:value-of              select = "./@Compact"/>
     </xsl:attribute>
    </xsl:if>
-   <xsl:call-template             name = "listDevicesAttribute"/>
 
    <xsl:apply-templates/>
   </xsl:element>
- </xsl:template>
-
-
- <!--
- =========================================================================
- Template to add the IncludedDevices/ExcludedDevices attributes to the
- output stream.
- If we find 'ExludedDevices=none' drop the attribute since it's
- meaningless.  Same for 'IncludeDevices=all'.
- Also drop the attribute for HP summaries since only Patient summaries are
- included to the mobile site.
- ========================================================================= -->
- <xsl:template                    name = "listDevicesAttribute">
-  <xsl:for-each                 select = "./@ExcludedDevices |
-                                         ./@IncludedDevices">
-   <xsl:choose>
-    <xsl:when                     test = ". = 'none'
-                                         or
-                                         $sumAudience = 'Health professionals'">
-     <!-- Do nothing, remove the attribute -->
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:attribute               name = "{name()}">
-      <xsl:value-of             select = "."/>
-     </xsl:attribute>
-    </xsl:otherwise>
-   </xsl:choose>
-  </xsl:for-each>
  </xsl:template>
 
 
@@ -1829,8 +1767,6 @@ LEFT OUTER JOIN query_term_pub m
      </xsl:attribute>
     </xsl:if>
 
-   <xsl:call-template             name = "listDevicesAttribute"/>
-
     <xsl:apply-templates/>
   </xsl:element>
  </xsl:template>
@@ -1856,8 +1792,6 @@ LEFT OUTER JOIN query_term_pub m
      <xsl:value-of              select = "./@Compact"/>
     </xsl:attribute>
    </xsl:if>
-
-   <xsl:call-template             name = "listDevicesAttribute"/>
 
    <xsl:apply-templates/>
   </xsl:element>
@@ -1887,8 +1821,6 @@ LEFT OUTER JOIN query_term_pub m
      <xsl:value-of              select = "./@Compact"/>
     </xsl:attribute>
    </xsl:if>
-
-   <xsl:call-template             name = "listDevicesAttribute"/>
 
    <xsl:apply-templates/>
   </xsl:element>
@@ -2094,7 +2026,6 @@ LEFT OUTER JOIN query_term_pub m
    <xsl:attribute                 name = "id">
     <xsl:value-of               select = "./@cdr:id"/>
    </xsl:attribute>
-   <xsl:call-template             name = "listDevicesAttribute"/>
    <xsl:apply-templates/>
   </xsl:copy>
  </xsl:template>
@@ -2893,7 +2824,6 @@ LEFT OUTER JOIN query_term_pub m
                                           QandADiv       | MarkedUpTitle  |
                                           Question       | Answer">
   <xsl:element                    name = "{name()}">
-   <xsl:call-template             name = "listDevicesAttribute"/>
    <xsl:apply-templates/>
   </xsl:element>
  </xsl:template>
@@ -2931,8 +2861,6 @@ LEFT OUTER JOIN query_term_pub m
     </xsl:attribute>
    </xsl:if>
 
-   <xsl:call-template            name = "listDevicesAttribute"/>
-
    <xsl:apply-templates/>
 
   </xsl:element>
@@ -2969,8 +2897,6 @@ LEFT OUTER JOIN query_term_pub m
      <xsl:value-of              select = "./@TabStyle"/>
     </xsl:attribute>
    </xsl:if>
-
-   <xsl:call-template            name = "listDevicesAttribute"/>
 
    <xsl:apply-templates/>
 
