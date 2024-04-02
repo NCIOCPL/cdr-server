@@ -2331,7 +2331,14 @@ LEFT OUTER JOIN query_term_pub m
                                           PlaceHolder[@name =
                                                        'BoardNameLink'] |
                                           PlaceHolder[@name =
+                                                       'BoardNameLink-lc'] |
+                                          PlaceHolder[@name =
                                                        'Adult_Treatment']">
+  <!-- Need to create this variable to have access to the PH value in
+       a for-each loop -->
+  <xsl:variable                   name = "ph-name"
+                                select = "@name"/>
+
   <xsl:choose>
    <!-- This modifies the Disclaimer for HP misc. document -->
    <!-- The Adult_Treatment template was redundent and does the same as the
@@ -2474,6 +2481,15 @@ LEFT OUTER JOIN query_term_pub m
       <!-- Links to Editorial Board members in Spanish -->
       <xsl:if                     test = "$language = 'Spanish'">
        <xsl:for-each            select = "$boardNamesES">
+          <!-- This hack only works for 2 boards and the second one being
+               the genetics board. The users did not want the article 'la'
+               to be included in the link -->
+         <xsl:if                  test = "count($boardNamesES) &gt; 1
+                                          and
+                                          position() = 1">
+          <xsl:text>el </xsl:text>
+         </xsl:if>
+
         <xsl:element              name = "ExternalRef">
          <xsl:attribute           name = "cdr:xref">
           <xsl:choose>
@@ -2506,11 +2522,28 @@ LEFT OUTER JOIN query_term_pub m
          </xsl:attribute>
 
          <xsl:choose>
-          <xsl:when               test = "count($boardNamesES) &gt; 1">
-           <xsl:value-of        select = "substring-after(., 'PDQ sobre')"/>
+          <xsl:when               test = "count($boardNamesES) &gt; 1
+                                          and
+                                          contains(., 'PDQ sobre el')">
+           <xsl:value-of        select = "substring-after(., 'PDQ sobre el ')"/>
+          </xsl:when>
+          <xsl:when               test = "count($boardNamesES) &gt; 1
+                                          and
+                                          contains(., 'PDQ sobre la')">
+           <xsl:value-of        select = "substring-after(., 'PDQ sobre la ')"/>
           </xsl:when>
           <xsl:otherwise>
-           <xsl:value-of          select = "."/>
+           <xsl:choose>
+            <!-- For cases when the BNL is displayed within a sentence and
+                 the first letter of the board name should be lower case -->
+            <xsl:when             test = "$ph-name = 'BoardNameLink-lc'">
+             <xsl:value-of      select = "translate(., 'C', 'c')"/>
+            </xsl:when>
+            <!-- All other cases when BNL is displayed as is -->
+            <xsl:otherwise>
+             <xsl:value-of      select = "."/>
+            </xsl:otherwise>
+           </xsl:choose>
           </xsl:otherwise>
          </xsl:choose>
 
@@ -2518,7 +2551,12 @@ LEFT OUTER JOIN query_term_pub m
          <xsl:if                  test = "count($boardNamesES) &gt; 1
                                           and
                                           not(position() = last())">
-          <xsl:text> y </xsl:text>
+          <!-- This hack only works for 2 boards and the second one being
+               the genetics board. However, there are no plans for the near
+               future to use any other board combinations than peds and genetics.
+               The users did not want the article 'la'
+               to be included in the link (VE, 2024-03-12) -->
+          <xsl:text> y la </xsl:text>
          </xsl:if>
        </xsl:for-each>
       </xsl:if>
