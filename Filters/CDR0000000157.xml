@@ -122,19 +122,6 @@ OCECDR-4123: Add HP/Patient URL to Summaries
  </xsl:variable>
 
  <!--
- <xsl:variable                    name = "hasSVPCModuleLinks">
-  <xsl:choose>
-   <xsl:when                      test = "count(/Summary/ModuleExtra) &gt; 0">
-    <xsl:text>Y</xsl:text>
-   </xsl:when>
-   <xsl:otherwise>
-    <xsl:text></xsl:text>
-   </xsl:otherwise>
-  </xsl:choose>
- </xsl:variable>
- -->
-
- <!--
  Variables needed to identify display of certain misc documents based on
  document type
  ======================================================================= -->
@@ -219,6 +206,18 @@ OCECDR-4123: Add HP/Patient URL to Summaries
    </xsl:otherwise>
   </xsl:choose>
  </xsl:variable>
+
+ <xsl:variable                    name = "boardNames"
+                                select = "/Summary/
+                                           SummaryMetaData/
+                                           PDQBoard/
+                                           Board[not(contains(., 'Advisory'))]"/>
+
+ <xsl:variable                    name = "boardNamesES"
+                                select = "/Summary/
+                                           SummaryMetaData/
+                                           PDQBoard/
+                                           BoardNameTranslation"/>
 
  <xsl:variable                    name = "displayReviewers"
                                 select = "/Summary
@@ -431,11 +430,6 @@ OCECDR-4123: Add HP/Patient URL to Summaries
      <xsl:apply-templates       select = "ModuleExtra"/>
     </xsl:when>
     <xsl:otherwise>  <!-- for SVPC and legacy PDQ documents -->
-       <!--
-       <xsl:element name = "volker">
-        <xsl:text>NO PARTNER</xsl:text>
-       </xsl:element>
-       -->
      <xsl:apply-templates       select = "SummarySection"/>
     </xsl:otherwise>
    </xsl:choose>
@@ -705,18 +699,6 @@ OCECDR-4123: Add HP/Patient URL to Summaries
     </xsl:attribute>
    </xsl:if>
 
-   <!-- I don't think the template listDevicesAttribute is still in use (VE) -->
-   <xsl:choose>
-    <xsl:when                     test = "not(@IncludedDevices)
-                                         and
-                                         not(@ExcludedDevices)">
-
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:call-template           name = "listDevicesAttribute"/>
-    </xsl:otherwise>
-   </xsl:choose>
-
    <xsl:apply-templates         select = "*"/>
   </xsl:element>
  </xsl:template>
@@ -777,6 +759,8 @@ OCECDR-4123: Add HP/Patient URL to Summaries
   mobile devices.  However, if the attribute has already been specified
   by the user, the user's entry takes precedence over the automated
   entry.
+  Note: The attributes ExcludedDevices/IncludedDevices aren't used
+        anymore and have now been removed. VE 2023-12-14
   ===================================================================== -->
   <xsl:element                    name = "SummarySection">
    <xsl:if                        test = "./@cdr:id">
@@ -784,22 +768,6 @@ OCECDR-4123: Add HP/Patient URL to Summaries
      <xsl:value-of              select = "./@cdr:id"/>
     </xsl:attribute>
    </xsl:if>
-   <xsl:choose>
-    <xsl:when                     test = "(SectMetaData/
-                                         SectionType = 'Changes to summary'
-                                         or
-                                         SectMetaData/
-                                         SectionType = 'Current clinical trials')
-                                         and
-                                         not(@IncludedDevices)
-                                         and
-                                         not(@ExcludedDevices)">
-
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:call-template           name = "listDevicesAttribute"/>
-    </xsl:otherwise>
-   </xsl:choose>
 
    <!-- For a partner document all top-level sections must include a section title.
         If the section is of type "Introductory Text" it may not include
@@ -1071,7 +1039,9 @@ LEFT OUTER JOIN query_term_pub m
  Template to extract the Board Name
  ================================================================== -->
  <xsl:template                   match = "PDQBoard">
-  <xsl:if                         test = "not(contains(Board, 'Advisory'))">
+  <xsl:if                         test = "not(contains(Board, 'Advisory'))
+                                          and
+                                          not(contains(Board, 'Inactive'))">
    <xsl:element                   name = "SummaryEditorialBoard">
     <xsl:attribute                name = "ref">
      <xsl:apply-templates       select = "Board/@cdr:ref"/>
@@ -1562,7 +1532,6 @@ LEFT OUTER JOIN query_term_pub m
     <xsl:attribute                name = "id">
      <xsl:value-of              select = "./@cdr:id"/>
     </xsl:attribute>
-    <xsl:call-template            name = "listDevicesAttribute"/>
     <xsl:apply-templates/>
    </xsl:element>
   </xsl:if>
@@ -1599,7 +1568,6 @@ LEFT OUTER JOIN query_term_pub m
          <xsl:value-of          select = "concat($miscDocId,
                                           substring(./@cdr:id, 7))"/>
         </xsl:attribute>
-        <xsl:call-template        name = "listDevicesAttribute"/>
         <xsl:apply-templates    select = "Para"
                                   mode = "copy"/>
         <xsl:apply-templates>
@@ -1616,7 +1584,6 @@ LEFT OUTER JOIN query_term_pub m
          <xsl:value-of          select = "concat($miscDocId,
                                           substring(./@cdr:id, 7))"/>
         </xsl:attribute>
-        <xsl:call-template        name = "listDevicesAttribute"/>
         <xsl:apply-templates    select = "Para"
                                   mode = "copy"/>
         <xsl:apply-templates>
@@ -1635,7 +1602,6 @@ LEFT OUTER JOIN query_term_pub m
       <xsl:attribute              name = "id">
        <xsl:value-of            select = "concat($miscDocId, ./@cdr:id)"/>
       </xsl:attribute>
-      <xsl:call-template          name = "listDevicesAttribute"/>
       <xsl:apply-templates      select = "Para"
                                   mode = "copy"/>
       <xsl:apply-templates>
@@ -1657,7 +1623,6 @@ LEFT OUTER JOIN query_term_pub m
                                   mode = "trialSearch">
   <xsl:if                         test = "normalize-space(.)">
    <xsl:element                   name = "{name()}">
-    <xsl:call-template            name = "listDevicesAttribute"/>
     <xsl:apply-templates/>
    </xsl:element>
   </xsl:if>
@@ -1726,38 +1691,9 @@ LEFT OUTER JOIN query_term_pub m
      <xsl:value-of              select = "./@Compact"/>
     </xsl:attribute>
    </xsl:if>
-   <xsl:call-template             name = "listDevicesAttribute"/>
 
    <xsl:apply-templates/>
   </xsl:element>
- </xsl:template>
-
-
- <!--
- =========================================================================
- Template to add the IncludedDevices/ExcludedDevices attributes to the
- output stream.
- If we find 'ExludedDevices=none' drop the attribute since it's
- meaningless.  Same for 'IncludeDevices=all'.
- Also drop the attribute for HP summaries since only Patient summaries are
- included to the mobile site.
- ========================================================================= -->
- <xsl:template                    name = "listDevicesAttribute">
-  <xsl:for-each                 select = "./@ExcludedDevices |
-                                         ./@IncludedDevices">
-   <xsl:choose>
-    <xsl:when                     test = ". = 'none'
-                                         or
-                                         $sumAudience = 'Health professionals'">
-     <!-- Do nothing, remove the attribute -->
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:attribute               name = "{name()}">
-      <xsl:value-of             select = "."/>
-     </xsl:attribute>
-    </xsl:otherwise>
-   </xsl:choose>
-  </xsl:for-each>
  </xsl:template>
 
 
@@ -1785,8 +1721,6 @@ LEFT OUTER JOIN query_term_pub m
      </xsl:attribute>
     </xsl:if>
 
-   <xsl:call-template             name = "listDevicesAttribute"/>
-
     <xsl:apply-templates/>
   </xsl:element>
  </xsl:template>
@@ -1812,8 +1746,6 @@ LEFT OUTER JOIN query_term_pub m
      <xsl:value-of              select = "./@Compact"/>
     </xsl:attribute>
    </xsl:if>
-
-   <xsl:call-template             name = "listDevicesAttribute"/>
 
    <xsl:apply-templates/>
   </xsl:element>
@@ -1843,8 +1775,6 @@ LEFT OUTER JOIN query_term_pub m
      <xsl:value-of              select = "./@Compact"/>
     </xsl:attribute>
    </xsl:if>
-
-   <xsl:call-template             name = "listDevicesAttribute"/>
 
    <xsl:apply-templates/>
   </xsl:element>
@@ -2050,7 +1980,6 @@ LEFT OUTER JOIN query_term_pub m
    <xsl:attribute                 name = "id">
     <xsl:value-of               select = "./@cdr:id"/>
    </xsl:attribute>
-   <xsl:call-template             name = "listDevicesAttribute"/>
    <xsl:apply-templates/>
   </xsl:copy>
  </xsl:template>
@@ -2152,6 +2081,8 @@ LEFT OUTER JOIN query_term_pub m
  =============================================================
  Replace the PlaceHolder link name in the Misc. Document
  ============================================================= -->
+ <!-- XXX This template isn't used anymore -->
+ <!--
  <xsl:template                   match = "PlaceHolder[
                                           @name = 'ClinicalTrialSearchLink']">
   <xsl:param                      name = "curLocation"/>
@@ -2196,6 +2127,7 @@ LEFT OUTER JOIN query_term_pub m
    </xsl:otherwise>
   </xsl:choose>
  </xsl:template>
+ -->
 
 
  <!--
@@ -2224,6 +2156,74 @@ LEFT OUTER JOIN query_term_pub m
  <xsl:template                   match = "PlaceHolder[@name =
                                                        'PurposeOfSummary']">
   <xsl:value-of                 select = "$purposeText"/>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Replace the PlaceHolder link for singular/plural editorial board(s)
+ =================================================================== -->
+ <xsl:template                   match = "PlaceHolder[@name =
+                                                       'is-or-are']">
+  <xsl:choose>
+   <xsl:when                      test = "count($boardNames) = 1">
+    <xsl:text>is</xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>are</xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Replace the PlaceHolder link for plural text changes
+ =================================================================== -->
+ <xsl:template                   match = "PlaceHolder[@name =
+                                                       'plural-n']">
+  <xsl:choose>
+   <xsl:when                      test = "count($boardNamesES) = 1">
+    <xsl:text></xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>n</xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Replace the PlaceHolder link for plural text changes
+ =================================================================== -->
+ <xsl:template                   match = "PlaceHolder[@name =
+                                                       'el-or-los']">
+  <xsl:choose>
+   <xsl:when                      test = "count($boardNamesES) = 1">
+    <xsl:text>El</xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>Los consejos editoriales del PDQ sobre</xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+ <!--
+ ===================================================================
+ Replace the PlaceHolder link for singular/plural editorial board(s)
+ =================================================================== -->
+ <xsl:template                   match = "PlaceHolder[@name =
+                                                       'uses-or-use']">
+  <xsl:choose>
+   <xsl:when                      test = "count($boardNames) = 1">
+    <xsl:text>uses</xsl:text>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:text>use</xsl:text>
+   </xsl:otherwise>
+  </xsl:choose>
  </xsl:template>
 
 
@@ -2331,105 +2331,237 @@ LEFT OUTER JOIN query_term_pub m
                                           PlaceHolder[@name =
                                                        'BoardNameLink'] |
                                           PlaceHolder[@name =
+                                                       'BoardNameLink-lc'] |
+                                          PlaceHolder[@name =
                                                        'Adult_Treatment']">
+  <!-- Need to create this variable to have access to the PH value in
+       a for-each loop -->
+  <xsl:variable                   name = "ph-name"
+                                select = "@name"/>
+
   <xsl:choose>
-   <xsl:when                      test = "@name = 'BoardName'">
+   <!-- This modifies the Disclaimer for HP misc. document -->
+   <!-- The Adult_Treatment template was redundent and does the same as the
+        BoardNameLink template does.
+   <xsl:when                      test = "@name = 'Adult_TreatmentXXX'">
     <xsl:choose>
-     <xsl:when                      test = "$boardName">
-      <xsl:value-of               select = "$boardName"/>
+     <xsl:when                    test = "$boardNames">
+      <xsl:choose>
+       -->
+       <!-- English BoardName PH -->
+       <!--
+       <xsl:when                  test = "$language = 'English'">
+        <xsl:for-each           select = "$boardNames">
+         <xsl:value-of          select = "."/>
+         <xsl:if                  test = "count($boardNames) &gt; 1
+                                            and
+                                            not(position() = last())">
+          <xsl:text> and the </xsl:text>
+         </xsl:if>
+        </xsl:for-each>
+       </xsl:when>
+       -->
+       <!-- Spanish -->
+       <!--
+       <xsl:otherwise>
+        <xsl:for-each           select = "$boardNamesES">
+         <xsl:value-of          select = "substring-after(., 'del PDQ sobre')"/>
+         <xsl:if                  test = "count($boardNames) &gt; 1
+                                            and
+                                            not(position() = last())">
+          <xsl:text> y </xsl:text>
+         </xsl:if>
+        </xsl:for-each>
+       </xsl:otherwise>
+      </xsl:choose>
      </xsl:when>
+     -->
+     <!-- BoardName missing -->
+     <!--
      <xsl:otherwise>
       <xsl:text>ERROR </xsl:text>
       <xsl:text>BoardName not specified</xsl:text>
       <xsl:text> ERROR</xsl:text>
      </xsl:otherwise>
     </xsl:choose>
-   </xsl:when>
-   <xsl:otherwise>
+   </xsl:when -->      <!-- End BoardName placeholder        -->
+   <xsl:when                      test = "@name = 'BoardName'">
     <xsl:choose>
-     <xsl:when                    test = "$boardName">
-      <xsl:element                name = "ExternalRef">
-       <xsl:attribute             name = "cdr:xref">
-        <xsl:choose>
-         <xsl:when                test = "$language = 'English'">
+     <xsl:when                    test = "$boardNames">
+      <!-- BoardName placeholder -->
+      <xsl:choose>
+       <!-- English BoardName placeholder -->
+       <xsl:when                  test = "$language = 'English'">
+        <xsl:for-each           select = "$boardNames">
+         <xsl:value-of          select = "."/>
+         <xsl:if                  test = "count($boardNames) &gt; 1
+                                            and
+                                            not(position() = last())">
+          <xsl:text> and the </xsl:text>
+         </xsl:if>
+        </xsl:for-each>
+       </xsl:when>
+       <!-- Spanish BoardName placeholder -->
+       <xsl:otherwise>
+        <xsl:for-each           select = "$boardNamesES">
+
+         <xsl:choose>
+          <xsl:when               test = "count($boardNamesES) &gt; 1">
+           <xsl:value-of        select = "substring-after(., 'PDQ sobre')"/>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:value-of          select = "."/>
+          </xsl:otherwise>
+         </xsl:choose>
+
+         <xsl:if                  test = "count($boardNames) &gt; 1
+                                            and
+                                            not(position() = last())">
+          <xsl:text> y </xsl:text>
+         </xsl:if>
+        </xsl:for-each>
+       </xsl:otherwise>
+      </xsl:choose>
+     </xsl:when>
+     <!-- BoardName missing -->
+     <xsl:otherwise>
+      <xsl:text>ERROR </xsl:text>
+      <xsl:text>BoardName not specified</xsl:text>
+      <xsl:text> ERROR</xsl:text>
+     </xsl:otherwise>
+    </xsl:choose>
+   </xsl:when>      <!-- End BoardName placeholder        -->
+   <xsl:otherwise>  <!-- Handle BoardNameLink and Adult_Treatment placeholder -->
+    <xsl:choose>
+
+     <xsl:when                    test = "$boardNames">
+      <xsl:if                     test = "$language = 'English'">
+       <xsl:for-each            select = "$boardNames">
+        <xsl:element              name = "ExternalRef">
+         <xsl:attribute           name = "cdr:xref">
           <xsl:choose>
-           <xsl:when              test = "$sumType = 'Treatment'">
-            <xsl:choose>
-             <xsl:when            test = "$ageGroup = 'Adult'">
-              <xsl:value-of     select = "concat($cgUrl, $cgBoardEN,
+           <xsl:when              test = "starts-with(., 'PDQ Adult')">
+            <xsl:value-of       select = "concat($cgUrl, $cgBoardEN,
                                             '/adult-treatment')"/>
-             </xsl:when>
-             <xsl:otherwise>
-              <xsl:value-of     select = "concat($cgUrl, $cgBoardEN,
-                                            '/pediatric-treatment')"/>
-             </xsl:otherwise>
-            </xsl:choose>
            </xsl:when>
-           <xsl:when              test = "$sumType = 'Screening'
-                                          or
-                                          $sumType = 'Prevention'">
+           <xsl:when              test = "starts-with(., 'PDQ Pediatric')">
+            <xsl:value-of       select = "concat($cgUrl, $cgBoardEN,
+                                            '/pediatric-treatment')"/>
+           </xsl:when>
+           <xsl:when              test = "starts-with(., 'PDQ Screening')">
             <xsl:value-of       select = "concat($cgUrl, $cgBoardEN,
                                             '/screening-prevention')"/>
            </xsl:when>
-           <xsl:when              test = "$sumType = concat(
-                                            'Integrative, alternative, ',
-                                            'and complementary therapies')">
+           <xsl:when              test = "starts-with(., 'PDQ Integrative')">
             <xsl:value-of       select = "concat($cgUrl, $cgBoardEN,
                                             '/cam')"/>
            </xsl:when>
-           <xsl:when              test = "$sumType = 'Supportive care'">
+           <xsl:when              test = "starts-with(., 'PDQ Supportive')">
             <xsl:value-of       select = "concat($cgUrl, $cgBoardEN,
                                             '/supportive-care')"/>
            </xsl:when>
-           <xsl:when              test = "$sumType = 'Genetics'">
+           <xsl:when              test = "starts-with(., 'PDQ Cancer Genetics')">
             <xsl:value-of       select = "concat($cgUrl, $cgBoardEN,
                                             '/genetics')"/>
            </xsl:when>
           </xsl:choose>
-         </xsl:when>
-         <!-- Links to Editorial Board members in Spanish -->
-         <xsl:otherwise>
+         </xsl:attribute>
+
+         <xsl:value-of          select = "."/>
+
+        </xsl:element>
+         <xsl:if                  test = "count($boardNames) &gt; 1
+                                          and
+                                          not(position() = last())">
+          <xsl:text> and the </xsl:text>
+         </xsl:if>
+       </xsl:for-each>
+      </xsl:if>
+
+      <!-- Links to Editorial Board members in Spanish -->
+      <xsl:if                     test = "$language = 'Spanish'">
+       <xsl:for-each            select = "$boardNamesES">
+          <!-- This hack only works for 2 boards and the second one being
+               the genetics board. The users did not want the article 'la'
+               to be included in the link -->
+         <xsl:if                  test = "count($boardNamesES) &gt; 1
+                                          and
+                                          position() = 1">
+          <xsl:text>el </xsl:text>
+         </xsl:if>
+
+        <xsl:element              name = "ExternalRef">
+         <xsl:attribute           name = "cdr:xref">
           <xsl:choose>
-           <xsl:when              test = "$sumType = 'Treatment'">
-            <xsl:choose>
-             <xsl:when            test = "$ageGroup = 'Adult'">
-              <xsl:value-of     select = "concat($cgUrl, $cgBoardES,
-                                            '/tratamiento-adultos')"/>
-             </xsl:when>
-             <xsl:otherwise>
-              <xsl:value-of     select = "concat($cgUrl, $cgBoardES,
-                                            '/tratamiento-pediatrico')"/>
-             </xsl:otherwise>
-            </xsl:choose>
-           </xsl:when>
-           <xsl:when              test = "$sumType = 'Supportive care'">
+           <xsl:when              test = "contains(., 'adultos')">
             <xsl:value-of       select = "concat($cgUrl, $cgBoardES,
-                                            '/cuidados-medicos-apoyo')"/>
+                                            '/tratamiento-adultos')"/>
            </xsl:when>
-           <xsl:when              test = "$sumType = 'Screening'
-                                            or
-                                            $sumType = 'Prevention'">
+           <xsl:when              test = "contains(., 'tratamiento pedi')">
+            <xsl:value-of       select = "concat($cgUrl, $cgBoardES,
+                                            '/tratamiento-pediatrico')"/>
+           </xsl:when>
+           <xsl:when              test = "contains(., 'la prevenci')">
             <xsl:value-of       select = "concat($cgUrl, $cgBoardES,
                                             '/deteccion-prevencion')"/>
            </xsl:when>
-           <xsl:when              test = "$sumType = concat(
-                                            'Integrative, alternative, ',
-                                            'and complementary therapies')">
+           <xsl:when              test = "contains(., 'alternativas')">
             <xsl:value-of       select = "concat($cgUrl, $cgBoardES,
                                             '/medicina-complementaria',
                                             '-alternativa')"/>
            </xsl:when>
-           <xsl:when              test = "$sumType = 'Genetics'">
+           <xsl:when              test = "contains(., 'paliativos')">
+            <xsl:value-of       select = "concat($cgUrl, $cgBoardES,
+                                            '/cuidados-medicos-apoyo')"/>
+           </xsl:when>
+           <xsl:when              test = "contains(., 'la gen')">
             <xsl:value-of       select = "concat($cgUrl, $cgBoardES,
                                             '/genetica')"/>
            </xsl:when>
           </xsl:choose>
-         </xsl:otherwise>
-        </xsl:choose>
-       </xsl:attribute>
-       <xsl:value-of            select = "$boardName"/>
-      </xsl:element>
+         </xsl:attribute>
+
+         <xsl:choose>
+          <xsl:when               test = "count($boardNamesES) &gt; 1
+                                          and
+                                          contains(., 'PDQ sobre el')">
+           <xsl:value-of        select = "substring-after(., 'PDQ sobre el ')"/>
+          </xsl:when>
+          <xsl:when               test = "count($boardNamesES) &gt; 1
+                                          and
+                                          contains(., 'PDQ sobre la')">
+           <xsl:value-of        select = "substring-after(., 'PDQ sobre la ')"/>
+          </xsl:when>
+          <xsl:otherwise>
+           <xsl:choose>
+            <!-- For cases when the BNL is displayed within a sentence and
+                 the first letter of the board name should be lower case -->
+            <xsl:when             test = "$ph-name = 'BoardNameLink-lc'">
+             <xsl:value-of      select = "translate(., 'C', 'c')"/>
+            </xsl:when>
+            <!-- All other cases when BNL is displayed as is -->
+            <xsl:otherwise>
+             <xsl:value-of      select = "."/>
+            </xsl:otherwise>
+           </xsl:choose>
+          </xsl:otherwise>
+         </xsl:choose>
+
+        </xsl:element>
+         <xsl:if                  test = "count($boardNamesES) &gt; 1
+                                          and
+                                          not(position() = last())">
+          <!-- This hack only works for 2 boards and the second one being
+               the genetics board. However, there are no plans for the near
+               future to use any other board combinations than peds and genetics.
+               The users did not want the article 'la'
+               to be included in the link (VE, 2024-03-12) -->
+          <xsl:text> y la </xsl:text>
+         </xsl:if>
+       </xsl:for-each>
+      </xsl:if>
      </xsl:when>
+
      <xsl:otherwise>
       <xsl:text>ERROR </xsl:text>
       <xsl:text>BoardName not specified</xsl:text>
@@ -2450,8 +2582,30 @@ LEFT OUTER JOIN query_term_pub m
  ============================================================== -->
  <xsl:template                   match = "PlaceHolder[@name =
                                                        'PdqCitation']">
-  <xsl:text>PDQ&#174; </xsl:text>
-  <xsl:value-of                 select = "substring-after($boardName, 'PDQ ')"/>
+  <xsl:choose>
+   <xsl:when                      test = "$language = 'English'">
+    <xsl:for-each               select = "$boardNames">
+     <xsl:text>PDQ&#174; </xsl:text>
+     <xsl:value-of              select = "substring-after(., 'PDQ ')"/>
+     <xsl:if                      test = "count($boardNames) &gt; 1
+                                          and
+                                          not(position() = last())">
+      <xsl:text> and </xsl:text>
+     </xsl:if>
+    </xsl:for-each>
+   </xsl:when>
+   <xsl:otherwise>
+    <xsl:for-each               select = "$boardNamesES">
+     <xsl:text>PDQ&#174; </xsl:text>
+     <xsl:value-of              select = "substring-after(., 'PDQ ')"/>
+     <xsl:if                      test = "count($boardNames) &gt; 1
+                                          and
+                                          not(position() = last())">
+      <xsl:text> y </xsl:text>
+     </xsl:if>
+    </xsl:for-each>
+   </xsl:otherwise>
+  </xsl:choose>
   <xsl:text>. PDQ </xsl:text>
   <xsl:value-of                 select = "$sumTitle"/>
   <xsl:text>. Bethesda, MD: National Cancer Institute. </xsl:text>
@@ -2651,7 +2805,6 @@ LEFT OUTER JOIN query_term_pub m
                                           QandADiv       | MarkedUpTitle  |
                                           Question       | Answer">
   <xsl:element                    name = "{name()}">
-   <xsl:call-template             name = "listDevicesAttribute"/>
    <xsl:apply-templates/>
   </xsl:element>
  </xsl:template>
@@ -2689,8 +2842,6 @@ LEFT OUTER JOIN query_term_pub m
     </xsl:attribute>
    </xsl:if>
 
-   <xsl:call-template            name = "listDevicesAttribute"/>
-
    <xsl:apply-templates/>
 
   </xsl:element>
@@ -2727,8 +2878,6 @@ LEFT OUTER JOIN query_term_pub m
      <xsl:value-of              select = "./@TabStyle"/>
     </xsl:attribute>
    </xsl:if>
-
-   <xsl:call-template            name = "listDevicesAttribute"/>
 
    <xsl:apply-templates/>
 
@@ -3805,6 +3954,10 @@ LEFT OUTER JOIN query_term_pub m
  <!--
  ==================================================================
  Template to add the Trial Search section
+
+ Note: This adds a paragraph at the end of a patient, treatment
+       summary section.  See "addTopLevelTrialSearchSection" for
+       the template adding a complete section for HP summaries.
  ================================================================== -->
  <xsl:template                    name = "addTrialSearchSection">
   <xsl:param                      name = "sectionID"
@@ -3915,6 +4068,7 @@ LEFT OUTER JOIN query_term_pub m
  Template to add the Trial Search String to sections with Diagnosis
  in the section meta data.
  ================================================================== -->
+ <!--
  <xsl:template                    name = "addTrialSearchString">
   <xsl:param                      name = "metaDataDoc"
                                 select = "''"/>
@@ -3946,6 +4100,7 @@ LEFT OUTER JOIN query_term_pub m
     <xsl:text>, </xsl:text>
    </xsl:when>
   </xsl:choose>
+  -->
 
   <!--
   Setting all parameters to create the search string
@@ -3955,6 +4110,7 @@ LEFT OUTER JOIN query_term_pub m
      HP:  format = 2
      Pat: format = 1
   ======================= -->
+  <!--
   <xsl:variable                   name = "format">
    <xsl:choose>
     <xsl:when                     test = "$audience = 'Patients'">
@@ -3965,6 +4121,7 @@ LEFT OUTER JOIN query_term_pub m
     </xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
+  -->
 
   <!--
   b) Setting the CDR-ID and doc type
@@ -3972,6 +4129,7 @@ LEFT OUTER JOIN query_term_pub m
      Drug         = 'idtype=1, id=12345'
      Intervention = 'idtype=5, id=12345'
   ================================== -->
+  <!--
   <xsl:variable                   name = "docType">
    <xsl:choose>
     <xsl:when                     test = "$metaDataType = 'Drug'">
@@ -3980,13 +4138,15 @@ LEFT OUTER JOIN query_term_pub m
     <xsl:when                     test = "$metaDataType = 'Intervention'">
      <xsl:text>idtype=5&amp;id=</xsl:text>
     </xsl:when>
-    <xsl:otherwise>         <!-- metaDataType = 'Diagnosis' -->
+    <xsl:otherwise>      -->   <!-- metaDataType = 'Diagnosis' -->
+  <!--
      <xsl:text>Diagnosis=</xsl:text>
     </xsl:otherwise>
    </xsl:choose>
    <xsl:value-of                select = "number(substring($metaDataDocID,
                                                                       4))"/>
   </xsl:variable>
+  -->
 
   <!--
   c) Setting up trial type for individual summary types
@@ -3998,6 +4158,7 @@ LEFT OUTER JOIN query_term_pub m
      6 = Diagnostic
      0 = All
   ===================================================== -->
+  <!--
   <xsl:variable                   name = "trialType">
    <xsl:choose>
     <xsl:when                     test = "$sumType = 'Treatment'">
@@ -4016,6 +4177,7 @@ LEFT OUTER JOIN query_term_pub m
     </xsl:otherwise>
    </xsl:choose>
   </xsl:variable>
+  -->
 
   <!--
   d) Setting up variable for country (US and all)
@@ -4037,6 +4199,7 @@ LEFT OUTER JOIN query_term_pub m
         not significant as long as the URL contains
         ClinicalTrialsLink.aspx
   ================================================= -->
+  <!--
   <xsl:element                    name = "ExternalRef">
    <xsl:attribute                 name = "xref">
     <xsl:text>https://www.cancer.gov/search</xsl:text>
@@ -4046,6 +4209,7 @@ LEFT OUTER JOIN query_term_pub m
     <xsl:value-of               select = "$trialType"/>
     <xsl:text>&amp;</xsl:text>
     <xsl:value-of               select = "$format"/>
+    -->
     <!--
     Include non-US trials for IACT searches
     See note above
@@ -4058,11 +4222,13 @@ LEFT OUTER JOIN query_term_pub m
      <xsl:value-of              select = "$country"/>
     </xsl:if>
     -->
+   <!--
    </xsl:attribute>
    <xsl:value-of                select = "$metaDataDoc"/>
   </xsl:element>
 
  </xsl:template>
+    -->
 
 
  <!--
