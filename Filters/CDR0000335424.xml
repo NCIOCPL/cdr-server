@@ -123,105 +123,42 @@ OCECDR-4511 - Remove template which adds nct_id attributes to ProtocolRefs
 
  <!--
  =================================================================
- Template to denormalize the Board elements
- We also need the information of the LOE summaries.
+ Suppress the default BoardMember template
+ The BoardMember elements will be added as part of the Board
+ template.
  ================================================================= -->
- <xsl:template                   match = "Board">
-
-  <!--
-  For Spanish summaries we need to find the Board information by
-  using the TranslationOf element and retrieving the information
-  for the editorial board from the English version
-  ===================================================================== -->
-  <xsl:variable                   name = "sqlQueryESBoard">
-SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
-       eb.int_val AS 'ENBoardID'
-  FROM query_term q
-  JOIN query_term eb
-    ON eb.doc_id = q.int_val
-   AND eb.path = '/Summary/SummaryMetaData/PDQBoard/Board/@cdr:ref'
-  JOIN query_term bt
-    ON eb.int_val = bt.doc_id
-   AND bt.path = '/Organization/OrganizationNameInformation/OfficialName/Name'
- WHERE q.path = '/Summary/TranslationOf/@cdr:ref'
-   AND bt.value not like '%Advisory%'
-   AND q.doc_id = ?
-  </xsl:variable>
-
-  <xsl:variable                   name = "queryRows"
-                                select = "document(cdr:escape-uri(
-                                          concat('cdrutil:/sql-query/',
-                                                   $sqlQueryESBoard,
-                                                   '~',
-                                                   $sumNormId)))"/>
+ <xsl:template                    name = "BoardMember"
+                                  mode = "remove"/>
 
 
-  <!--
-  Assign the Board ID for English summaries
-  Assign the Board ID of the corresponding English summary for Spanish
-  ==================================================================== -->
-  <xsl:variable                   name = "BoardID">
-   <xsl:choose>
-    <xsl:when                     test = "$sumLanguage = 'EN'">
-     <xsl:value-of              select = "@cdr:ref"/>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:for-each              select = "$queryRows
-                                             /SqlResult
-                                             /row">
-      <xsl:value-of             select = "col[@name='ENBoard']"/>
-     </xsl:for-each>
-    </xsl:otherwise>
-   </xsl:choose>
-  </xsl:variable>
-
-  <!--
-  Cancel the report if we can't find the board ID for the English board to
-  retrieve the board information.
-  ==================================================================== -->
-  <xsl:if                         test = "$BoardID = ''">
-   <xsl:message              terminate = "yes">
-    <xsl:text>Error: No board ID available to retrieve board info!</xsl:text>
-   </xsl:message>
-  </xsl:if>
+ <!--
+ =================================================================
+ Populate the English board information and add the list of
+ BoardMembers
+ ================================================================= -->
+ <xsl:template                   match = "Board"
+                                  mode = "ENboard">
 
   <xsl:variable                   name = "BoardInfo"
-                                select = "document(concat('cdr:',$BoardID,
-                                                           '/last'))"/>
-   <xsl:choose>
-    <xsl:when                     test = "$sumLanguage = 'EN'">
-     <xsl:element                 name = "Board">
-      <xsl:attribute              name = "cdr:ref">
-       <xsl:value-of            select = "@cdr:ref"/>
-      </xsl:attribute>
+                                select = "document(concat('cdr:',@cdr:ref,
+                                                          '/last'))"/>
 
-      <xsl:value-of             select = "$BoardInfo/Organization
+  <xsl:element                    name = "Board">
+   <xsl:attribute                 name = "cdr:ref">
+    <xsl:value-of               select = "@cdr:ref"/>
+   </xsl:attribute>
+
+   <xsl:value-of                select = "$BoardInfo/Organization
                                             /OrganizationNameInformation
                                             /OfficialName
                                             /Name"/>
-     </xsl:element>
-    </xsl:when>
-    <xsl:otherwise>
-     <xsl:for-each              select = "$queryRows
-                                             /SqlResult
-                                             /row">
-      <xsl:element                name = "Board">
-       <xsl:attribute             name = "cdr:ref">
-        <xsl:value-of           select = "col[@name='ENBoard']"/>
-       </xsl:attribute>
-       <xsl:value-of            select = "$BoardInfo/Organization
-                                            /OrganizationNameInformation
-                                            /OfficialName
-                                            /Name"/>
-      </xsl:element>
-     </xsl:for-each>
-    </xsl:otherwise>
-   </xsl:choose>
+  </xsl:element>
 
   <xsl:copy-of                  select = "$BoardInfo/Organization
                                             /PDQBoardInformation
                                             /ShowReviewerInfo"/>
-  <xsl:copy-of                   select = "$BoardInfo/Organization
+
+  <xsl:copy-of                  select = "$BoardInfo/Organization
                                             /PDQBoardInformation
                                             /BoardNameTranslation"/>
 
@@ -258,28 +195,11 @@ SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
                                             /SummaryURL"/>
    </xsl:element>
 
+
    <!--
    For the Spanish summaries we need to retrieve the LOE documents
    from the information provided in the English board document.
-   This only needs to be done for the treatment, supportive care, CAM.
-
-   Starting in Dec. 2021 we also have to include Genetics summaries.
-   We now include each (currently available ) summary type in this
-   if block and should remove the if-block eventually.
    =================================================================== -->
-   <xsl:if                        test = "$sumType = 'Treatment'
-                                          or
-                                          $sumType = 'Supportive care'
-                                          or
-                                          $sumType = 'Screening'
-                                          or
-                                          $sumType = 'Prevention'
-                                          or
-                                          $sumType = 'Genetics'
-                                          or
-                                          $sumType = concat('Integrative,',
-                                                            ' alternative, and ',
-                                                            'complementary therapies')">
    <xsl:variable                  name = "loeNormIDES"
                                 select = "number(
                                            substring-before(
@@ -299,8 +219,6 @@ SELECT doc_id AS "CDRID"
                                                    $sqlQueryESLoe,
                                                    '~',
                                                    $loeNormIDES)))"/>
-
-   <!-- xsl:value-of select = "$loeNormIDES"/ -->
 
    <xsl:variable                  name = "loeIDES">
     <xsl:for-each               select = "$queryRowsLoe
@@ -352,10 +270,468 @@ SELECT doc_id AS "CDRID"
                                             /SummaryMetaData
                                             /SummaryURL"/>
    </xsl:element>
-   </xsl:if>
   </xsl:if>
 
+  <xsl:apply-templates          select = "../BoardMember"/>
  </xsl:template>
+
+
+ <!--
+ =================================================================
+ Template to denormalize the Board elements
+ We also need the information of the LOE summaries.
+
+ With the change of allowing 2 editorial boards to be added to a
+ single summary we need to change how the PDQBoard section is
+ created.  For English summaries we're copying the existing PDQBoard
+ sections but we may need to create extra PDQBoard sections for
+ Spanish summaries - Spanish summaries never include more than 1
+ PDQBoard element which is only included as a placeholder.
+                                                    VE, 2023-11-16
+ ================================================================= -->
+ <xsl:template                   match = "PDQBoard">
+
+
+  <!-- Create PDQBoard information for English summries -->
+  <xsl:choose>
+   <xsl:when                      test = "$sumLanguage = 'EN'">
+    <xsl:element                  name = "PDQBoard">
+     <xsl:apply-templates       select = "Board"
+                                  mode = "ENboard"/>
+    </xsl:element>
+   </xsl:when>
+   <!-- Create PDQBoard information for Spanish summries -->
+   <xsl:otherwise>
+    <!--
+    For Spanish summaries we need to find the Board information by
+    using the TranslationOf element and retrieving the information
+    for the editorial board from the English version
+    ===================================================================== -->
+    <xsl:variable                 name = "sqlQueryESBoard">
+SELECT q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
+       eb.int_val AS 'ENBoardID'
+  FROM query_term q
+  JOIN query_term eb
+    ON eb.doc_id = q.int_val
+   AND eb.path = '/Summary/SummaryMetaData/PDQBoard/Board/@cdr:ref'
+  JOIN query_term bt
+    ON eb.int_val = bt.doc_id
+   AND bt.path = '/Organization/OrganizationNameInformation/OfficialName/Name'
+ WHERE q.path = '/Summary/TranslationOf/@cdr:ref'
+   AND bt.value not like '%Advisory%'
+   AND q.doc_id = ?
+    </xsl:variable>
+
+    <xsl:variable                 name = "queryRows"
+                                select = "document(cdr:escape-uri(
+                                          concat('cdrutil:/sql-query/',
+                                                   $sqlQueryESBoard,
+                                                   '~',
+                                                   $sumNormId)))"/>
+
+    <xsl:for-each               select = "$queryRows
+                                             /SqlResult
+                                             /row">
+      <xsl:variable               name = "BoardID"
+                                select = "col[@name='ENBoard']"/>
+      <!--
+      Cancel the report if we can't find the board ID for the English board to
+      retrieve the board information.
+      ==================================================================== -->
+      <xsl:if                     test = "$BoardID = ''">
+       <xsl:message          terminate = "yes">
+        <xsl:text>Error: No board ID available to retrieve board info!</xsl:text>
+       </xsl:message>
+      </xsl:if>
+
+      <xsl:variable               name = "BoardInfo"
+                                select = "document(concat('cdr:', $BoardID,
+                                                          '/last'))"/>
+      <xsl:element                name = "PDQBoard">
+       <xsl:element               name = "Board">
+        <xsl:attribute            name = "cdr:ref">
+         <xsl:value-of          select = "$BoardID"/>
+        </xsl:attribute>
+
+        <xsl:value-of           select = "$BoardInfo/Organization
+                                            /OrganizationNameInformation
+                                            /OfficialName
+                                            /Name"/>
+       </xsl:element>
+
+       <xsl:copy-of             select = "$BoardInfo/Organization
+                                            /PDQBoardInformation
+                                            /ShowReviewerInfo"/>
+
+       <xsl:copy-of             select = "$BoardInfo/Organization
+                                            /PDQBoardInformation
+                                            /BoardNameTranslation"/>
+
+       <xsl:variable              name = "loeID"
+                                select = "$BoardInfo/Organization
+                                            /PDQBoardInformation
+                                            /LOESummary/@cdr:ref"/>
+
+       <!--
+       Advisory Boards may not list LOE information
+       ============================================ -->
+       <xsl:if                    test = "$loeID">
+        <xsl:variable             name = "loeInfo"
+                                select = "document(concat('cdr:',$loeID,
+                                                                '/lastp'))"/>
+        <xsl:element              name = "LOESummary">
+         <xsl:attribute           name = "cdr:ref">
+          <xsl:value-of         select = "$BoardInfo/Organization
+                                            /PDQBoardInformation
+                                            /LOESummary/@cdr:ref"/>
+         </xsl:attribute>
+         <xsl:value-of          select = "$loeInfo/Summary
+                                            /SummaryTitle"/>
+        </xsl:element>
+
+        <xsl:element              name = "BoardLOEURL">
+         <xsl:attribute           name = "cdr:xref">
+          <xsl:value-of         select = "$loeInfo/Summary
+                                            /SummaryMetaData
+                                            /SummaryURL/@cdr:xref"/>
+         </xsl:attribute>
+         <xsl:value-of          select = "$loeInfo/Summary
+                                            /SummaryMetaData
+                                            /SummaryURL"/>
+        </xsl:element>
+
+        <!--
+        For the Spanish summaries we need to retrieve the LOE documents
+        from the information provided in the English board document.
+        =================================================================== -->
+        <xsl:variable             name = "loeNormIDES"
+                                select = "number(
+                                           substring-before(
+                                           concat(
+                                           substring-after($loeID, 'CDR'),
+                                                               '#'), '#'))"/>
+        <xsl:variable             name = "sqlQueryESLoe">
+     SELECT doc_id AS "CDRID"
+       FROM query_term_pub
+      WHERE int_val = ?
+        AND path = '/Summary/TranslationOf/@cdr:ref'
+        </xsl:variable>
+
+        <xsl:variable             name = "queryRowsLoe"
+                                select = "document(cdr:escape-uri(
+                                           concat('cdrutil:/sql-query/',
+                                                   $sqlQueryESLoe,
+                                                   '~',
+                                                   $loeNormIDES)))"/>
+
+        <xsl:variable             name = "loeIDES">
+         <xsl:for-each          select = "$queryRowsLoe
+                                             /SqlResult
+                                             /row">
+          <xsl:value-of         select = "col[@name='CDRID']"/>
+         </xsl:for-each>
+        </xsl:variable>
+
+        <!--
+        Cancel the report if we can't find a translation of the LOE Summary
+        for this document type/board.
+
+        Should we be checking this for English Summaries, too? VE, 2021-02-10
+        ==================================================================== -->
+        <xsl:if                   test = "$loeIDES = ''">
+         <xsl:message        terminate = "yes">
+          <xsl:text>Publishable version missing for Spanish LOE translation with </xsl:text>
+          <xsl:text>SummaryType '</xsl:text>
+          <xsl:value-of         select = "$sumType"/>
+          <xsl:text>' and Board '</xsl:text>
+          <xsl:value-of         select = "normalize-space($sumBoard)"/>
+          <xsl:text>'</xsl:text>
+         </xsl:message>
+        </xsl:if>
+
+        <xsl:variable             name = "loeInfoES"
+                                select = "document(concat('cdr:',
+                                          format-number($loeIDES,
+                                                        'CDR0000000000'),
+                                                           '/lastp'))"/>
+
+        <xsl:element              name = "LOESummaryES">
+         <xsl:attribute           name = "cdr:ref">
+          <xsl:value-of         select = "format-number($loeIDES,
+                                                         'CDR0000000000')"/>
+         </xsl:attribute>
+         <xsl:value-of          select = "$loeInfoES/Summary
+                                            /SummaryTitle"/>
+        </xsl:element>
+
+        <xsl:element              name = "BoardLOEURLES">
+         <xsl:attribute           name = "cdr:xref">
+          <xsl:value-of         select = "$loeInfoES/Summary
+                                            /SummaryMetaData
+                                            /SummaryURL/@cdr:xref"/>
+         </xsl:attribute>
+         <xsl:value-of          select = "$loeInfoES/Summary
+                                            /SummaryMetaData
+                                            /SummaryURL"/>
+        </xsl:element>
+       </xsl:if>
+      </xsl:element>
+    </xsl:for-each>
+
+    <!--
+    Adding PDQ Board Members to the Spanish summary
+
+    (Currently) unable to add BoardMember elements while inside the
+    for-each loop.  Added additional PDQBoard section containing the
+    list of all editorial board members.
+    ===================================================== -->
+    <xsl:element                  name = "PDQBoard">
+     <xsl:apply-templates       select = "Board"/>
+     <xsl:apply-templates       select = "BoardMember"/>
+    </xsl:element>
+
+   </xsl:otherwise>
+  </xsl:choose>
+ </xsl:template>
+
+
+         <!--
+         =================================================================
+         Template to denormalize the Board elements
+         We also need the information of the LOE summaries.
+         ================================================================= -->
+         <xsl:template                   match = "BoardXXX">
+
+          <!--
+          For Spanish summaries we need to find the Board information by
+          using the TranslationOf element and retrieving the information
+          for the editorial board from the English version
+          ===================================================================== -->
+          <xsl:variable                   name = "sqlQueryESBoard">
+        SELECT top 1 q.doc_id, q.path, q.int_val, eb.value AS 'ENBoard',
+               eb.int_val AS 'ENBoardID'
+          FROM query_term q
+          JOIN query_term eb
+            ON eb.doc_id = q.int_val
+           AND eb.path = '/Summary/SummaryMetaData/PDQBoard/Board/@cdr:ref'
+          JOIN query_term bt
+            ON eb.int_val = bt.doc_id
+           AND bt.path = '/Organization/OrganizationNameInformation/OfficialName/Name'
+         WHERE q.path = '/Summary/TranslationOf/@cdr:ref'
+           AND bt.value not like '%Advisory%'
+           AND q.doc_id = ?
+          </xsl:variable>
+
+          <xsl:variable                   name = "queryRows"
+                                        select = "document(cdr:escape-uri(
+                                                  concat('cdrutil:/sql-query/',
+                                                           $sqlQueryESBoard,
+                                                           '~',
+                                                           $sumNormId)))"/>
+
+
+          <!--
+          Assign the Board ID for English summaries
+          Assign the Board ID of the corresponding English summary for Spanish
+          ==================================================================== -->
+          <xsl:variable                   name = "BoardID">
+           <xsl:choose>
+            <xsl:when                     test = "$sumLanguage = 'EN'">
+             <xsl:value-of              select = "@cdr:ref"/>
+            </xsl:when>
+            <xsl:otherwise>
+             <xsl:for-each              select = "$queryRows
+                                                     /SqlResult
+                                                     /row">
+              <xsl:value-of             select = "col[@name='ENBoard']"/>
+             </xsl:for-each>
+            </xsl:otherwise>
+           </xsl:choose>
+          </xsl:variable>
+          <xsl:value-of select = "$BoardID"/>
+          <xsl:text>ZZZ</xsl:text>
+
+          <!--
+          Cancel the report if we can't find the board ID for the English board to
+          retrieve the board information.
+          ==================================================================== -->
+          <xsl:if                         test = "$BoardID = ''">
+           <xsl:message              terminate = "yes">
+            <xsl:text>Error: No board ID available to retrieve board info!</xsl:text>
+           </xsl:message>
+          </xsl:if>
+
+          <xsl:variable                   name = "BoardInfo"
+                                        select = "document(concat('cdr:',$BoardID,
+                                                                   '/last'))"/>
+           <xsl:choose>
+            <xsl:when                     test = "$sumLanguage = 'EN'">
+             <xsl:element                 name = "Board">
+              <xsl:attribute              name = "cdr:ref">
+               <xsl:value-of            select = "@cdr:ref"/>
+              </xsl:attribute>
+
+              <xsl:value-of             select = "$BoardInfo/Organization
+                                                    /OrganizationNameInformation
+                                                    /OfficialName
+                                                    /Name"/>
+             </xsl:element>
+            </xsl:when>
+            <xsl:otherwise>
+             <xsl:for-each              select = "$queryRows
+                                                     /SqlResult
+                                                     /row">
+              <xsl:element                name = "Board">
+               <xsl:attribute             name = "cdr:ref">
+                <xsl:value-of           select = "col[@name='ENBoard']"/>
+               </xsl:attribute>
+               <xsl:value-of            select = "$BoardInfo/Organization
+                                                    /OrganizationNameInformation
+                                                    /OfficialName
+                                                    /Name"/>
+              </xsl:element>
+             </xsl:for-each>
+            </xsl:otherwise>
+           </xsl:choose>
+
+          <xsl:copy-of                  select = "$BoardInfo/Organization
+                                                    /PDQBoardInformation
+                                                    /ShowReviewerInfo"/>
+          <xsl:copy-of                   select = "$BoardInfo/Organization
+                                                    /PDQBoardInformation
+                                                    /BoardNameTranslation"/>
+
+          <xsl:variable                   name = "loeID"
+                                        select = "$BoardInfo/Organization
+                                                    /PDQBoardInformation
+                                                    /LOESummary/@cdr:ref"/>
+
+          <!--
+          Advisory Boards may not list LOE information
+          ============================================ -->
+          <xsl:if                         test = "$loeID">
+           <xsl:variable                  name = "loeInfo"
+                                        select = "document(concat('cdr:',$loeID,
+                                                                   '/lastp'))"/>
+           <xsl:element                   name = "LOESummary">
+            <xsl:attribute                name = "cdr:ref">
+             <xsl:value-of              select = "$BoardInfo/Organization
+                                                    /PDQBoardInformation
+                                                    /LOESummary/@cdr:ref"/>
+            </xsl:attribute>
+            <xsl:value-of               select = "$loeInfo/Summary
+                                                    /SummaryTitle"/>
+           </xsl:element>
+
+           <xsl:element                   name = "BoardLOEURL">
+            <xsl:attribute                name = "cdr:xref">
+             <xsl:value-of              select = "$loeInfo/Summary
+                                                    /SummaryMetaData
+                                                    /SummaryURL/@cdr:xref"/>
+            </xsl:attribute>
+            <xsl:value-of               select = "$loeInfo/Summary
+                                                    /SummaryMetaData
+                                                    /SummaryURL"/>
+           </xsl:element>
+
+           <!--
+           For the Spanish summaries we need to retrieve the LOE documents
+           from the information provided in the English board document.
+           This only needs to be done for the treatment, supportive care, CAM.
+
+           Starting in Dec. 2021 we also have to include Genetics summaries.
+           We now include each (currently available ) summary type in this
+           if block and should remove the if-block eventually.
+           =================================================================== -->
+           <xsl:if                        test = "$sumType = 'Treatment'
+                                                  or
+                                                  $sumType = 'Supportive care'
+                                                  or
+                                                  $sumType = 'Screening'
+                                                  or
+                                                  $sumType = 'Prevention'
+                                                  or
+                                                  $sumType = 'Genetics'
+                                                  or
+                                                  $sumType = concat('Integrative,',
+                                                                    ' alternative, and ',
+                                                                    'complementary therapies')">
+           <xsl:variable                  name = "loeNormIDES"
+                                        select = "number(
+                                                   substring-before(
+                                                   concat(
+                                                   substring-after($loeID, 'CDR'),
+                                                                       '#'), '#'))"/>
+           <xsl:variable                  name = "sqlQueryESLoe">
+        SELECT doc_id AS "CDRID"
+          FROM query_term_pub
+         WHERE int_val = ?
+           AND path = '/Summary/TranslationOf/@cdr:ref'
+           </xsl:variable>
+
+           <xsl:variable                  name = "queryRowsLoe"
+                                        select = "document(cdr:escape-uri(
+                                                   concat('cdrutil:/sql-query/',
+                                                           $sqlQueryESLoe,
+                                                           '~',
+                                                           $loeNormIDES)))"/>
+
+           <!-- xsl:value-of select = "$loeNormIDES"/ -->
+
+           <xsl:variable                  name = "loeIDES">
+            <xsl:for-each               select = "$queryRowsLoe
+                                                     /SqlResult
+                                                     /row">
+             <xsl:value-of              select = "col[@name='CDRID']"/>
+            </xsl:for-each>
+           </xsl:variable>
+
+           <!--
+           Cancel the report if we can't find a translation of the LOE Summary
+           for this document type/board.
+
+           Should we be checking this for English Summaries, too? VE, 2021-02-10
+           ==================================================================== -->
+           <xsl:if                        test = "$loeIDES = ''">
+            <xsl:message             terminate = "yes">
+             <xsl:text>Publishable version missing for Spanish LOE translation with </xsl:text>
+             <xsl:text>SummaryType '</xsl:text>
+             <xsl:value-of              select = "$sumType"/>
+             <xsl:text>' and Board '</xsl:text>
+             <xsl:value-of              select = "normalize-space($sumBoard)"/>
+             <xsl:text>'</xsl:text>
+            </xsl:message>
+           </xsl:if>
+
+           <xsl:variable                  name = "loeInfoES"
+                                        select = "document(concat('cdr:',
+                                                  format-number($loeIDES,
+                                                                'CDR0000000000'),
+                                                                   '/lastp'))"/>
+
+           <xsl:element                   name = "LOESummaryES">
+            <xsl:attribute                name = "cdr:ref">
+             <xsl:value-of              select = "format-number($loeIDES,
+                                                                 'CDR0000000000')"/>
+            </xsl:attribute>
+            <xsl:value-of               select = "$loeInfoES/Summary
+                                                    /SummaryTitle"/>
+           </xsl:element>
+
+           <xsl:element                   name = "BoardLOEURLES">
+            <xsl:attribute                name = "cdr:xref">
+             <xsl:value-of              select = "$loeInfoES/Summary
+                                                    /SummaryMetaData
+                                                    /SummaryURL/@cdr:xref"/>
+            </xsl:attribute>
+            <xsl:value-of               select = "$loeInfoES/Summary
+                                                    /SummaryMetaData
+                                                    /SummaryURL"/>
+           </xsl:element>
+           </xsl:if>
+          </xsl:if>
+
+         </xsl:template>
 
 
  <!--
