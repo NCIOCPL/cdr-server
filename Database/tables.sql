@@ -1166,6 +1166,10 @@ CREATE TABLE pub_proc
 GO
 GRANT INSERT, UPDATE ON pub_proc TO CdrPublishing
 GO
+CREATE NONCLUSTERED INDEX pub_proc_status_completed_idx
+ON pub_proc (status, completed)
+INCLUDE (pub_system, output_dir, started)
+GO
 
 /*
  * Table used to remember the set of documents which Cancer.Gov has.
@@ -2452,4 +2456,3 @@ GO
 ALTER TABLE version_blob_usage ADD FOREIGN KEY(doc_id, doc_version)
  REFERENCES all_doc_versions
 GO
-
