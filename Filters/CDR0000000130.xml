@@ -1,156 +1,293 @@
 <?xml version="1.0" ?>
 <!-- Filter title: Documentation Help Screens Filter -->
 
-<!--Filter written by C.Burg - 3/14/2002 -->
-<!-- ===========================================================
-           Filter to display XMetal Help Screens
-      ============================================================ -->
-<xsl:transform               xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                               version = "1.0"
-                             xmlns:cdr = "cips.nci.nih.gov/cdr"
-               exclude-result-prefixes = "cdr">
+<!-- Filter to display CDR help pages -->
+<xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" xmlns:cdr="cips.nci.nih.gov/cdr" exclude-result-prefixes="cdr">
 
- <xsl:import    href = "cdr:name:Module: InLine Markup Formatter"/>
- <xsl:include   href = "cdr:name:Module: Table Formatter"/>
- <xsl:include   href = "cdr:name:Module: STYLE Default"/>
+  <xsl:output method="html" encoding="utf-8" indent="yes"/>
 
- <xsl:output                    method = "html"
-                              encoding = "utf-8"
-                                indent = "yes"/>
+  <xsl:variable name="image-url-base" select="'/cgi-bin/cdr/GetCdrImage.py?id='" />
 
+  <!-- Create the HTML help page. -->
+  <xsl:template match="/">
+    <xsl:text disable-output-escaping='yes'>&lt;!DOCTYPE html></xsl:text>
+    <html>
+      <head>
+        <meta charset="utf-8"/>
+        <meta content="IE=edge" http-equiv="X-UA-Compatible"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+        <meta name="description" content="CDR documentation pages"/>
+        <title>
+          <xsl:text>CDR Documentation - </xsl:text>
+          <xsl:value-of select="normalize-space(string(Documentation/Body/DocumentationTitle))"/>
+        </title>
+        <link href="/favicon.ico" rel="icon"/>
+        <script src="/uswds/js/uswds-init.min.js"></script>
+        <link href="/uswds/css/uswds.min.css" rel="stylesheet"/>
+        <style>
+          .usa-list li { max-width: none; }
+          a, a:active, a:visited, a:hover { color: #003ecc; text-decoration: none; }
+          a:hover { text-decoration: underline; }
+          ul > li { list-style-type: disc; }
+          ul.cross-refs > li { list-style-type: none; }
+          .note, .tip { color: green; }
+        </style>
+      </head>
+      <xsl:apply-templates select="Documentation"/>
+    </html>
+  </xsl:template>
 
- <xsl:template                   match = "/">
-  <xsl:text disable-output-escaping='yes'>&lt;!DOCTYPE html>
-</xsl:text>
-  <html>
-   <head>
-    <xsl:variable                 name = "cdrdocs"
-                                select = "document('cdrx:/*/CdrCtl')"/>
-    <title>
-     <xsl:value-of              select = "document('cdrutil:/docid')"/>
-     <xsl:text>: </xsl:text>
-     <xsl:value-of              select = "substring-before($cdrdocs/
-                                          CdrDocCtl/DocTitle,';')"/>
-    </title>
+  <!-- Create the page body. -->
+  <xsl:template match="Documentation">
+    <body>
+      <main class="grid-container margin-bottom-6">
+        <header class="usa-header">
+          <h1>
+            <xsl:apply-templates select="Body/DocumentationTitle"/>
+          </h1>
+          <xsl:for-each select="DateLastModified">
+            <p>
+              <strong>Last Reviewed: </strong>
+              <xsl:value-of select="."/>
+            </p>
+          </xsl:for-each>
+        </header>
+        <xsl:apply-templates select="Body/TopicSection"/>
+        <xsl:apply-templates select="Body/TopicRelationship/RelatedTopic"/>
+      </main>
+      <script src="/uswds/js/uswds.min.js"></script>
+    </body>
+  </xsl:template>
 
-    <!--Inline sytle sheet to display H2 and H4 headers in Navy -->
-    <style>
-     <xsl:call-template           name = "defaultStyle"/>
-     body { font-family: Arial, Helvetica, sans-serif }
-     h2, h3, h4 {color: Navy}
-    </style>
-   </head>
-   <xsl:apply-templates         select = "Documentation"/>
-  </html>
- </xsl:template>
+  <xsl:template match="TopicSection">
+    <xsl:for-each select="TopicSectionTitle">
+      <h2>
+        <xsl:apply-templates/>
+      </h2>
+    </xsl:for-each>
+    <xsl:apply-templates select="TopicText|Tip"/>
+  </xsl:template>
 
+  <xsl:template match="TopicText">
+    <div class="topic-text">
+      <xsl:apply-templates select="ItemizedList|OrderedList|Para|Section|Table|MediaLink|LiteralLayout|TopicSection"/>
+    </div>
+  </xsl:template>
 
- <xsl:template                   match = "Documentation">
-  <body>
-   <xsl:apply-templates/>
-  </body>
- </xsl:template>
+  <xsl:template match="DocumentationRef">
+    <xsl:choose>
+      <xsl:when test="@cdr:href">
+        <a>
+          <xsl:attribute name="href">
+            <xsl:text>/cgi-bin/cdr/Filter.py?Filter=name:Documentation+Help+Screens+Filter&amp;DocId=</xsl:text>
+            <xsl:value-of select="@cdr:href"/>
+          </xsl:attribute>
+          <xsl:attribute name="target">_blank</xsl:attribute>
+          <xsl:apply-templates/>
+        </a>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:apply-templates/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
 
-
- <!--
- ============================================================
- Display the Title of the Help Screen
- ============================================================ -->
- <xsl:template                   match = "DocumentationTitle">
-  <h2>
-   <xsl:value-of                select = "."/>
-  </h2>
-
-  <xsl:apply-templates          select = "../../DateLastModified"
-                                  mode = "top"/>
- </xsl:template>
-
-
- <!--
- ====================================================================
- Display a topic section title
- ====================================================================  -->
- <xsl:template                   match = "TopicSectionTitle">
-  <h3>
-   <xsl:value-of                select = "."/>
-  </h3>
- </xsl:template>
-
-
- <!--
- ==============================================================
- Do not display these data elements
- ============================================================== -->
- <xsl:template                   match = "Metadata | DateLastModified"/>
-
-
- <!--
- ==============================================================
- Display Related Topic
- ============================================================== -->
- <xsl:template                   match = "TopicRelationship">
-  <xsl:for-each                 select = "//RelatedTopic">
-   <b>
-    <xsl:value-of               select = "@RelationshipType"/>
-    <xsl:text>:</xsl:text>
-   </b>
-   <br />
-   <xsl:for-each                select = "RelatedTopicID">
+  <xsl:template match="ExternalRef">
     <a>
-     <xsl:attribute               name = "href">
-      <xsl:value-of select = "concat('/cgi-bin/cdr/Filter.py?DocId=', @cdr:href,
-                       '&amp;Filter=name:Documentation+Help+Screens+Filter')"/>
-     </xsl:attribute>
-     <xsl:value-of              select = "."/>
-     <br />
-
-     <xsl:if                      test = "position() = last()">
-      <br />
-     </xsl:if>
+      <xsl:attribute name="href">
+        <xsl:value-of select="@cdr:xref"/>
+      </xsl:attribute>
+      <xsl:attribute name="target">
+        <xsl:text>_blank</xsl:text>
+      </xsl:attribute>
+      <xsl:apply-templates/>
     </a>
-   </xsl:for-each>
-  </xsl:for-each>
- </xsl:template>
+  </xsl:template>
 
+  <!-- Lists -->
+  <xsl:template match="ItemizedList">
+    <xsl:for-each select="ListTitle"><h3><xsl:apply-templates/></h3></xsl:for-each>
+    <ul class="usa-list"><xsl:apply-templates select="ListItem"/></ul>
+  </xsl:template>
+  <xsl:template match="OrderedList">
+    <xsl:for-each select="ListTitle"><h3><xsl:apply-templates/></h3></xsl:for-each>
+    <ol class="usa-list"><xsl:apply-templates select="ListItem"/></ol>
+  </xsl:template>
+  <xsl:template match="ListItem"><li><xsl:apply-templates/></li></xsl:template>
 
- <!--
- ====================================================================
- Display the last modified date on top of the document.
- It is displayed as "Last Reviewed" to give an incentive of updating
- a document with an old date.
- ====================================================================  -->
- <xsl:template                   match = "DateLastModified"
-                                  mode = "top">
-  <b>
-   <xsl:text>Last Reviewed: </xsl:text>
-  </b>
-  <xsl:value-of                 select = "."/>
- </xsl:template>
+  <!-- Show related topics. -->
+  <xsl:template match="RelatedTopic">
+    <xsl:if test="RelatedTopicID[@cdr:href]">
+      <h3>
+        <xsl:value-of select="@RelationshipType"/>
+      </h3>
+      <ul class="cross-refs usa-list usa-list--unstyled margin-left-0">
+        <xsl:apply-templates select="RelatedTopicID"/>
+      </ul>
+    </xsl:if>
+  </xsl:template>
 
+  <!-- Link to the related topic. -->
+  <xsl:template match="RelatedTopicID">
+    <xsl:if test="@cdr:href">
+      <li>
+        <a>
+          <xsl:attribute name="href">
+            <xsl:text>/cgi-bin/cdr/Filter.py?Filter=name:Documentation+Help+Screens+Filter&amp;DocId=</xsl:text>
+            <xsl:value-of select="@cdr:href"/>
+          </xsl:attribute>
+          <xsl:attribute name="target">_blank</xsl:attribute>
+          <xsl:apply-templates/>
+        </a>
+      </li>
+    </xsl:if>
+  </xsl:template>
 
- <!--
- =====================================================================
- Display a Note element without markup
- ===================================================================== -->
- <xsl:template               match = "Note">
-  <i>
-   <font color="green">
-    <xsl:text> [Note: </xsl:text>
-    <xsl:apply-templates/>
-    <xsl:text>] </xsl:text>
-   </font>
-  </i>
- </xsl:template>
+  <!-- Display a Note element without markup -->
+  <xsl:template match="Note">
+    <span class="note text-italic">
+      <xsl:text> [Note: </xsl:text>
+      <xsl:apply-templates/>
+      <xsl:text>] </xsl:text>
+    </span>
+  </xsl:template>
 
- <!--
- =====================================================================
- Display a Tip element in a separate paragraph.
- ===================================================================== -->
- <xsl:template               match = "Tip">
-  <p style="color: green; font-style: italic">
-    <xsl:text>TIP: </xsl:text>
-    <xsl:apply-templates/>
-  </p>
- </xsl:template>
+  <!-- Display a Tip element in a separate paragraph. -->
+  <xsl:template match="Tip">
+    <p class="tip text-italic">
+      <xsl:text>TIP: </xsl:text>
+      <xsl:apply-templates/>
+    </p>
+  </xsl:template>
+
+  <!-- Display images. -->
+  <xsl:template match="MediaID">
+    <div>
+      <img>
+        <xsl:attribute name="src">
+          <xsl:value-of select="$image-url-base" />
+          <xsl:value-of select="@cdr:ref"/>
+        </xsl:attribute>
+      </img>
+    </div>
+  </xsl:template>
+
+  <!-- Create an HTML table. -->
+  <xsl:template match="Table">
+    <table class="usa-table">
+      <xsl:for-each select="Title">
+        <caption>
+          <xsl:apply-templates/>
+        </caption>
+      </xsl:for-each>
+      <xsl:apply-templates select="TGroup/THead"/>
+      <xsl:apply-templates select="TGroup/TBody"/>
+      <xsl:apply-templates select="TGroup/TFoot"/>
+    </table>
+  </xsl:template>
+
+  <!-- Create the table's head, body and footer blocks. -->
+  <xsl:template match="THead|TBody|TFoot">
+    <xsl:variable name="output-name">
+      <xsl:choose>
+        <xsl:when test="self::THead">thead</xsl:when>
+        <xsl:when test="self::TFoot">tfoot</xsl:when>
+        <xsl:otherwise>tbody</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:element name="{$output-name}">
+      <xsl:for-each select="Row">
+        <tr>
+          <xsl:apply-templates select="entry"/>
+        </tr>
+      </xsl:for-each>
+    </xsl:element>
+  </xsl:template>
+
+  <!-- Create one of the table's cells. -->
+  <xsl:template match="entry">
+    <xsl:variable name="output-name">
+      <xsl:choose>
+        <xsl:when test="name(../..) = 'THead'">th</xsl:when>
+        <xsl:otherwise>td</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:variable name="classes">
+      <xsl:call-template name="get-cell-classes"/>
+    </xsl:variable>
+    <xsl:element name="{$output-name}">
+      <xsl:if test="@MoreRows">
+        <xsl:attribute name="rowspan">
+          <xsl:value-of select="@MoreRows + 1"/>
+        </xsl:attribute>
+      </xsl:if>
+      <xsl:if test="@NameSt">
+        <xsl:attribute name="colspan">
+          <xsl:call-template name="get-colspan"/>
+        </xsl:attribute>
+      </xsl:if>
+      <xsl:if test="$classes">
+        <xsl:attribute name="class">
+          <xsl:value-of select="$classes"/>
+        </xsl:attribute>
+      </xsl:if>
+      <xsl:apply-templates/>
+    </xsl:element>
+  </xsl:template>
+
+  <!-- Utility functions for tables -->
+  <xsl:template name="get-colspan">
+    <xsl:variable name="name_start" select="@NameSt"/>
+    <xsl:variable name="name_end" select="@NameEnd"/>
+    <xsl:variable name="start_col" select="../../../ColSpec[@ColName=$name_start]/@ColNum"/>
+    <xsl:variable name="end_col" select="../../../ColSpec[@ColName=$name_end]/@ColNum"/>
+    <xsl:value-of select="$end_col - $start_col + 1"/>
+  </xsl:template>
+
+  <xsl:template name="get-cell-classes">
+    <xsl:variable name="name_start" select="@NameSt"/>
+    <xsl:variable name="col_spec" select="../../../ColSpec[@ColName=$name_start]"/>
+    <xsl:variable name="classes">
+      <xsl:choose>
+        <xsl:when test="@Align = 'Left'">text-left </xsl:when>
+        <xsl:when test="@Align = 'Center'">text-center </xsl:when>
+        <xsl:when test="@Align = 'Right'">text-right </xsl:when>
+        <xsl:when test="@Align = 'Justify'">text-justify </xsl:when>
+        <xsl:when test="../@Align = 'Left'">text-left </xsl:when>
+        <xsl:when test="../@Align = 'Center'">text-center </xsl:when>
+        <xsl:when test="../@Align = 'Right'">text-right </xsl:when>
+        <xsl:when test="../@Align = 'Justify'">text-justify </xsl:when>
+        <xsl:when test="$col_spec/@Align = 'Left'">text-left </xsl:when>
+        <xsl:when test="$col_spec/@Align = 'Center'">text-center </xsl:when>
+        <xsl:when test="$col_spec/@Align = 'Right'">text-right </xsl:when>
+        <xsl:when test="$col_spec/@Align = 'Justify'">text-justify </xsl:when>
+        <xsl:when test="../../../@Align = 'Left'">text-left </xsl:when>
+        <xsl:when test="../../../@Align = 'Center'">text-center </xsl:when>
+        <xsl:when test="../../../@Align = 'Right'">text-right </xsl:when>
+        <xsl:when test="../../../@Align = 'Justify'">text-justify </xsl:when>
+      </xsl:choose>
+      <xsl:choose>
+        <xsl:when test="@Valign = 'Top'">text-top </xsl:when>
+        <xsl:when test="@Valign = 'Middle'">text-middle </xsl:when>
+        <xsl:when test="@Valign = 'Bottom'">text-bottom </xsl:when>
+        <xsl:when test="../@Valign = 'Top'">text-top </xsl:when>
+        <xsl:when test="../@Valign = 'Middle'">text-middle </xsl:when>
+        <xsl:when test="../@Valign = 'Bottom'">text-bottom </xsl:when>
+        <xsl:when test="../../@Valign = 'Top'">text-top </xsl:when>
+        <xsl:when test="../../@Valign = 'Middle'">text-middle </xsl:when>
+        <xsl:when test="../../@Valign = 'Bottom'">text-bottom </xsl:when>
+      </xsl:choose>
+     </xsl:variable>
+     <xsl:value-of select="normalize-space($classes)"/>
+  </xsl:template>
+
+  <!-- Simple mappings -->
+  <xsl:template match="Emphasis|StandardWording"><em><xsl:apply-templates/></em></xsl:template>
+  <xsl:template match="LiteralLayout"><pre><xsl:apply-templates/></pre></xsl:template>
+  <xsl:template match="Para"><p><xsl:apply-templates/></p></xsl:template>
+  <xsl:template match="Strong"><strong><xsl:apply-templates/></strong></xsl:template>
+  <xsl:template match="Superscript"><sup><xsl:apply-templates/></sup></xsl:template>
+  <xsl:template match="Subscript"><sub><xsl:apply-templates/></sub></xsl:template>
+  <xsl:template match="TT"><code><xsl:apply-templates/></code></xsl:template>
 
 </xsl:transform>
