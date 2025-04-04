@@ -13,9 +13,9 @@ parser = ArgumentParser()
 parser.add_argument("--tier", "-t")
 opts = parser.parse_args()
 try:
-    conn = db.connect(tier=opts.tier)
+    conn = db.connect(tier=opts.tier, timeout=900)
     cursor = conn.cursor()
-    cursor.execute(SQL, timeout=900)
+    cursor.execute(SQL)
     cursor.commit()
     elapsed = datetime.now() - start
     print("index created in", elapsed)
