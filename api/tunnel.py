@@ -6,7 +6,6 @@ Trap all exceptions except those for imports from the standard library.
 """
 
 import datetime
-import os
 import sys
 
 
@@ -18,12 +17,11 @@ try:
 except Exception as e:
     now = datetime.datetime.now()
     try:
-        for drive in "DCEF":
-            path = f"{drive}:/cdr/Log"
-            if os.path.exists(path):
-                with open(f"{path}/https_api.log", "a") as fp:
-                    fp.write(f"{now} [ERROR] {e}\n")
-                break
+        from cdrapi.settings import Tier
+        tier = Tier()
+        path = f"{tier.logdir}/https_api.log"
+        with open(path, "a", encoding="utf-8") as fp:
+            fp.write(f"{now} [ERROR] {e}\n")
     except Exception:
         pass
     sys.stdout.buffer.write(b"Status: 500 CDR unavailable\r\n\r\n")
