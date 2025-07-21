@@ -29,8 +29,30 @@
           a, a:active, a:visited, a:hover { color: #003ecc; text-decoration: none; }
           a:hover { text-decoration: underline; }
           ul > li { list-style-type: disc; }
+          .usa-list li { line-height: 1.15; }
           ul.cross-refs > li { list-style-type: none; }
           .note, .tip { color: green; }
+          code { color: brown; font-size: 85%; }
+          pre { font-family: Courier; font-size: 90%; }
+          .note code, .tip code { color: darkgreen; }
+          blockquote {
+            font-style: italic;
+            color: #555;
+            border-left: 4px solid #ccc;
+            padding: 10px 20px;
+            margin: 20px 0;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+         }
+
+         cite {
+           display: block;
+           text-align: right;
+           font-size: 0.9em;
+           color: #888;
+           margin-top: 5px;
+         }
+
         </style>
       </head>
       <xsl:apply-templates select="Documentation"/>
@@ -79,7 +101,7 @@
       <xsl:when test="@cdr:href">
         <a>
           <xsl:attribute name="href">
-            <xsl:text>/cgi-bin/cdr/Filter.py?Filter=name:Documentation+Help+Screens+Filter&amp;DocId=</xsl:text>
+            <xsl:text>/cgi-bin/cdr/Help.py?id=</xsl:text>
             <xsl:value-of select="@cdr:href"/>
           </xsl:attribute>
           <xsl:attribute name="target">_blank</xsl:attribute>
@@ -133,7 +155,7 @@
       <li>
         <a>
           <xsl:attribute name="href">
-            <xsl:text>/cgi-bin/cdr/Filter.py?Filter=name:Documentation+Help+Screens+Filter&amp;DocId=</xsl:text>
+            <xsl:text>/cgi-bin/cdr/Help.py?id=</xsl:text>
             <xsl:value-of select="@cdr:href"/>
           </xsl:attribute>
           <xsl:attribute name="target">_blank</xsl:attribute>
@@ -158,6 +180,18 @@
       <xsl:text>TIP: </xsl:text>
       <xsl:apply-templates/>
     </p>
+  </xsl:template>
+
+  <!-- Put a quote in a separate block. -->
+  <xsl:template match="Quote">
+   <xsl:if test="QuotedText">
+    <blockquote>
+     <xsl:apply-templates select="QuotedText"/>
+     <xsl:if test="QuoteAuthor">
+      <cite>- <xsl:value-of select="QuoteAuthor"/></cite>
+     </xsl:if>
+    </blockquote>
+   </xsl:if>
   </xsl:template>
 
   <!-- Display images. -->
