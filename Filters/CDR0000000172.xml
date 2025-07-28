@@ -1,78 +1,117 @@
 <?xml version="1.0" ?>
 <!-- Filter title: Help Table of Contents -->
-<xsl:transform                xmlns:xsl = "http://www.w3.org/1999/XSL/Transform"
-                              xmlns:cdr = "cips.nci.nih.gov/cdr"
-                                version = "1.0">
+<xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:cdr="cips.nci.nih.gov/cdr" version = "1.0">
 
- <xsl:output                     method = "html"/>
+  <xsl:output method="html"/>
 
- <xsl:variable                     name = "script"
-                                 select = "'/cgi-bin/cdr/Filter.py'"/>
- <xsl:variable                     name = "filter"
-                                 select = "'Documentation+Help+Screens+Filter'"/>
+  <xsl:template match="/">
+    <xsl:text disable-output-escaping='yes'>&lt;!DOCTYPE html></xsl:text>
+    <html>
+      <xsl:apply-templates select="DocumentationToC"/>
+    </html>
+  </xsl:template>
 
- <xsl:template                    match = "/">
-  <html>
-   <xsl:apply-templates          select = "DocumentationToC"/>
-  </html>
- </xsl:template>
+  <xsl:template match="DocumentationToC">
+    <head>
+      <meta charset="utf-8"/>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+      <link href="/favicon.ico" rel="icon"/>
+      <script src="/uswds/js/uswds-init.min.js"></script>
+      <link href="/uswds/css/uswds.min.css" rel="stylesheet"/>
+      <title>
+        <xsl:apply-templates select="ToCTitle"/>
+      </title>
+      <style>
+        a, a:active, a:visited, a:hover { color: #005ea2; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+      </style>
+    </head>
+    <body>
+      <header class="usa-header">
+        <div class="grid-container">
+          <h1>
+            <xsl:apply-templates select="ToCTitle"/>
+          </h1>
+        </div>
+      </header>
+      <main class="main-content usa-layout-docs usa-section" role="main">
+        <div id="help-menu" class="grid-container">
+          <xsl:apply-templates select="TableOfContents"/>
+        </div>
+      </main>
+      <script src="/uswds/js/uswds.min.js"></script>
+    </body>
+  </xsl:template>
 
- <xsl:template                    match = "DocumentationToC">
-  <head>
-   <title>
-    <xsl:apply-templates         select = "ToCTitle"/>
-   </title>
-   <style>
-    h1,h2,h3,h4 {color: Navy}
-    li.lnone {list-style: none}
-    p { +.4mm }
-   </style>
-  </head>
-  <body>
-   <h1>
-    <xsl:apply-templates         select = "ToCTitle"/>
-   </h1>
-   <xsl:apply-templates          select = "TableOfContents"/>
-  </body>
- </xsl:template>
+  <xsl:template match="xxTableOfContents">
+    <xsl:for-each select="ToCSection/ToCLevel">
+      <ul class="usa-list usa-list--unstyled margin-left-0">
+        <xsl:apply-templates select="ToCEntry"/>
+        <xsl:apply-templates select="ToCLevel"/>
+      </ul>
+    </xsl:for-each>
+  </xsl:template>
 
- <xsl:template                    match = "TableOfContents">
-  <xsl:apply-templates           select = "ToCSection"/>
- </xsl:template>
+  <xsl:template match="TableOfContents/ToCSection">
+    <xsl:variable name="block_id">
+      <xsl:value-of select="translate(normalize-space(ToCSectionTitle), ' @apos;@quot;,:', '-')"/>
+      <xsl:text>-accordion</xsl:text>
+    </xsl:variable>
+    <div class="usa-accordion">
+      <h4 class="usa-accordion__heading">
+        <button type="button" class="usa-accordion__button" aria-expanded="false">
+          <xsl:attribute name="aria-controls">
+            <xsl:value-of select="$block_id"/>
+          </xsl:attribute>
+          <xsl:value-of select="ToCSectionTitle"/>
+        </button>
+      </h4>
+      <div class="usa-accordion__content">
+        <xsl:attribute name="id">
+          <xsl:value-of select="$block_id"/>
+        </xsl:attribute>
+        <xsl:for-each select="ToCLevel">
+          <ul class="usa-list usa-list--unstyled margin-left-0">
+            <xsl:apply-templates select="ToCEntry|ToCLevel"/>
+          </ul>
+        </xsl:for-each>
+      </div>
+    </div>
+  </xsl:template>
 
- <xsl:template                    match = "ToCSection">
-  <xsl:apply-templates           select = "ToCLevel"/>
- </xsl:template>
+  <xsl:template match="ToCLevel">
+    <ul class="usa-list usa-list--unstyled margin-left-4">
+      <xsl:apply-templates select="ToCEntry|ToCLevel"/>
+    </ul>
+  </xsl:template>
 
- <xsl:template                    match = "ToCLevel">
-  <ul>
-   <xsl:apply-templates          select = "ToCEntry"/>
-   <xsl:apply-templates          select = "ToCLevel"/>
-  </ul>
- </xsl:template>
+  <xsl:template match="ToCEntry">
+    <li>
+      <xsl:apply-templates select="ConstructedTopic"/>
+      <xsl:apply-templates select="DocumentationRef"/>
+    </li>
+  </xsl:template>
 
- <xsl:template                    match = "ToCEntry">
-  <li>
-   <xsl:apply-templates          select = "ConstructedTopic"/>
-   <xsl:apply-templates          select = "DocumentationRef"/>
-  </li>
- </xsl:template>
+  <xsl:template match="ConstructedTopic">
+    <xsl:value-of select="."/>
+  </xsl:template>
 
- <xsl:template                    match = "ConstructedTopic">
-  <xsl:value-of                  select = "."/>
- </xsl:template>
-
- <xsl:template                    match = "DocumentationRef">
-  <a>
-   <xsl:attribute                  name = "href">
-    <xsl:value-of                 select = "concat($script,
-                                                   '?DocId=',
-                                                   @cdr:href,
-                                                   '&amp;Filter=name:',
-                                                   $filter)"/>
-   </xsl:attribute>
-   <xsl:value-of                  select = "."/>
-  </a>
- </xsl:template>
+  <xsl:template match="DocumentationRef">
+    <xsl:choose>
+      <xsl:when test="@cdr:href">
+        <a>
+          <xsl:attribute name="href">
+            <xsl:text>/cgi-bin/cdr/Help.py?id=</xsl:text>
+            <xsl:value-of select="@cdr:href"/>
+          </xsl:attribute>
+          <xsl:attribute name="target">_blank</xsl:attribute>
+          <xsl:value-of select="."/>
+        </a>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:value-of select="."/>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
 
 </xsl:transform>

@@ -1254,6 +1254,7 @@ CREATE TABLE pub_proc_doc
 GO
 GRANT INSERT, UPDATE ON pub_proc_doc TO CdrPublishing
 GO
+CREATE INDEX pub_proc_doc_failure_index ON pub_proc_doc(failure)
 
 /*
  * Table used to record parameters used for processing a publication event.
